@@ -12,59 +12,22 @@ REPO = Path(__file__).resolve().parents[2]
 SID = "test-session-1"
 
 
-def plan_text(status="Pending", t1="Pending", t2="Pending", approach="Use session middleware."):
-    return f"""# feature/login: Login
+def plan_text(status="Pending", done=False, notes=""):
+    box = "x" if done else " "
+    return f"""# feature/login
 
 - Status: {status}
-- Branch: feature/login
-- Base: main
-- Updated: 2026-11-15
 
-## User story
-As a user I want to log in so that I can see my data.
+## Goal
+Users log in to see their data.
 
-## Requirements
-- FR-001: Users log in with email and password.
-- NFR-001: Login responds within 1s.
-
-## Approach
-{approach}
-
-## Out of scope
-SSO.
-
-## Tasks
-
-### TASK-001: Login form
-- Status: {t1}
-- Requirements: FR-001
-- Depends on: none
-- Files: src/login.py
-- Done when: form posts credentials
-- Verify: unit test
-
-### TASK-002: Session
-- Status: {t2}
-- Requirements: FR-001, NFR-001
-- Depends on: TASK-001
-- Files: src/session.py
-- Done when: session created
-- Verify: unit test
-
-## Acceptance criteria
-- AC-1: valid credentials log in.
-
-## Risks
-None.
-
-## Open questions
-None.
-
-## Verification
-Not run.
-
-## History
-- 2026-11-15: Created.
+## Todo
+- [{box}] Users log in with email and password (src/login.py)
+- [{box}] Session lasts 1 day (src/session.py)
+{notes}
+## Changes
+1. Add an email/password check in `src/login.py`
+2. Store sessions with a 1-day expiry in `src/session.py`
 """
 
 
@@ -73,7 +36,8 @@ class HookTest(unittest.TestCase):
         self.root = Path(os.path.realpath(tempfile.mkdtemp(prefix="wf-")))
         for sub in ("hooks", "scripts"):
             shutil.copytree(REPO / ".claude" / sub, self.root / ".claude" / sub)
-        (self.root / "docs" / "tickets").mkdir(parents=True)
+        (self.root / "tickets").mkdir()
+        (self.root / "docs").mkdir()
         (self.root / "src").mkdir()
         self.env = {**os.environ, "CLAUDE_PROJECT_DIR": str(self.root)}
 

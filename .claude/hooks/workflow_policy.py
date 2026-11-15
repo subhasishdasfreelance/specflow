@@ -18,11 +18,14 @@ RULES = {
     "plan": {("*", "Pending"), ("*", "Blocked")},
     "build": {("Planned", "Building"), ("Building", "Built"), ("Blocked", "Building"),
               ("Planned", "Blocked"), ("Building", "Blocked")},
-    "verify": {("Built", "Verified"), ("Built", "Blocked")},
-    "complete": {("Verified", "Human verified")},
+    # /verify adds "Claude verified"; /verify human adds "Human verified". Both, in the order done.
+    "verify": {("Built", "Claude verified"), ("Built", "Human verified"),
+               ("Claude verified", "Claude verified + Human verified"),
+               ("Human verified", "Human verified + Claude verified"),
+               ("Built", "Blocked"), ("Claude verified", "Blocked"), ("Human verified", "Blocked")},
 }
 FREE_LINE = re.compile(r"^\s*-\s*(Status|Updated|Blocker):")
-FREE_SECTIONS = ("Verification", "History")
+TICKED = re.compile(r"^(\s*-\s*)\[[xX]\]")
 READ_ONLY_MSG = ("{mode} mode: application files are read-only. "
                  "Use /vibe for ad-hoc changes, or approve a plan (/plan approve) and run /build.")
 
@@ -55,7 +58,7 @@ def classify(abspath):
         return "protected"
     if rel == "docs/PRD.md":
         return "prd"
-    if rel.startswith("docs/tickets/"):
+    if rel.startswith("tickets/"):
         return "plan"
     return "source"
 
@@ -64,7 +67,7 @@ def contains_protected(abspath):
     """True if deleting/moving abspath would take protected files with it."""
     root = project_root()
     targets = [root / ".claude", root / ".git", root / "CLAUDE.md", root / "docs" / "PRD.md",
-               root / "docs" / "tickets"]
+               root / "tickets"]
     return any(_inside(str(t), abspath) for t in targets)
 
 
@@ -134,14 +137,11 @@ def simulate(tool, ti, old):
 
 
 def normalize(text):
-    """Plan text minus the parts status updates may change."""
-    out, skip = [], False
+    """Plan text minus the parts status updates may change (Status/Blocker lines, ticks)."""
+    out = []
     for line in text.splitlines():
-        if line.startswith("## "):
-            skip = line[3:].strip() in FREE_SECTIONS
-            out.append(line.strip())
-        elif not skip and not FREE_LINE.match(line):
-            out.append(line.rstrip())
+        if not FREE_LINE.match(line):
+            out.append(TICKED.sub(r"\1[ ]", line.rstrip()))
     return "\n".join(out).strip()
 
 
@@ -155,20 +155,17 @@ def _allowed(mode, old, new, approve):
 
 
 def transition_error(mode, approve, old_text, new_text):
-    o, n = vp.parse(old_text), vp.parse(new_text)
-    pairs = [("Plan", o["fields"].get("Status"), n["fields"].get("Status"))]
-    old_tasks = {t["id"]: t["fields"].get("Status") for t in o["tasks"]}
-    pairs += [(t["id"], old_tasks.get(t["id"]), t["fields"].get("Status")) for t in n["tasks"]]
-    for item, a, b in pairs:
-        if a != b and not _allowed(mode, a, b, approve):
-            hint = " Approval needs '/plan approve'." if b == "Planned" else ""
-            return f"/{mode}: {item} status {a or 'new'} -> {b} is not allowed.{hint}"
+    a = vp.parse(old_text)["fields"].get("Status")
+    b = vp.parse(new_text)["fields"].get("Status")
+    if a != b and not _allowed(mode, a, b, approve):
+        hint = " Approval needs '/plan approve'." if b == "Planned" else ""
+        return f"/{mode}: status {a or 'new'} -> {b} is not allowed.{hint}"
     return None
 
 
 def plan_decision(mode, args, tool, ti, path):
     if mode not in RULES:
-        return "Tickets change only through /plan (statuses via /build, /verify, /complete)."
+        return "Tickets change only through /plan (statuses via /build, /verify)."
     try:
         old = Path(path).read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -182,6 +179,5 @@ def plan_decision(mode, args, tool, ti, path):
             return "Only /plan can create a plan."
         if normalize(old) != normalize(new):
             what = "/plan approve" if approve else f"/{mode}"
-            return (f"{what} may only change Status/Updated/Blocker lines and the "
-                    "Verification/History sections of a plan.")
+            return (f"{what} may only change Status/Blocker lines and todo ticks of a plan.")
     return transition_error(mode, approve, old, new)

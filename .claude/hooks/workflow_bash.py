@@ -1,6 +1,6 @@
 """Bash policy. Returns a deny reason (str) or None.
 
-Read-only modes (analysis, prd, plan, verify, complete) use an allowlist.
+Read-only modes (analysis, prd, plan, verify) use an allowlist.
 Write modes (build, vibe) block destructive git, protected paths and
 dangerous deletes. This is a best-effort parser, not a sandbox.
 """
@@ -39,15 +39,14 @@ GH_READ = {("pr", "view"), ("pr", "list"), ("pr", "status"), ("pr", "diff"),
 # What each mode may do with git / gh, beyond plain reads.
 GIT_ALLOWED = {
     "analysis": {"read"}, "prd": {"read"}, "plan": {"read"}, "verify": {"read"},
-    "build": {"read", "branch", "stage"}, "vibe": {"read", "branch", "stage"},
-    "complete": {"read", "branch", "stage", "commit", "push", "pr-create"},
+    "build": {"read", "stage"}, "vibe": {"read", "stage"},
     "resolve": {"read", "stage", "commit", "merge"},
 }
 SCRIPT_OK = re.compile(r"^(test|lint|typecheck|type-check|check|build)(:|$)")
 GRADLE_OK = re.compile(r"^(:?[\w-]+:)*(test|lint|check|build|assemble)\w*$", re.I)
 FIX_FLAGS = {"--fix", "--write", "-w", "-u", "--update", "--updateSnapshot",
              "--update-snapshots"}
-PROTECTED_TEXT = (".claude/", ".claude\\", "CLAUDE.md", "docs/PRD.md", "docs/tickets", ".git/")
+PROTECTED_TEXT = (".claude/", ".claude\\", "CLAUDE.md", "docs/PRD.md", "tickets/", ".git/")
 
 
 def tokenize(cmd):
@@ -133,10 +132,6 @@ def git_kind(words):
         return "stage"
     if sub == "commit":
         return "other" if "--amend" in flags else "commit"
-    if sub == "push":
-        bad = [r for r in rest if r.startswith(("--force", "+", ":"))
-               or r in ("-f", "-d", "--delete", "--mirror", "--all", "--prune", "--tags")]
-        return "other" if bad else "push"
     return "other"
 
 
@@ -144,7 +139,7 @@ def gh_kind(words):
     pair = tuple(w for w in words[1:3])
     if pair in GH_READ:
         return "read"
-    return "pr-create" if pair == ("pr", "create") else "other"
+    return "other"
 
 
 def is_read_only(words):
@@ -240,11 +235,7 @@ def segment_error(mode, args, words, cwd, depth):
     if cmd in ("git", "gh"):
         kind = git_kind(words) if cmd == "git" else gh_kind(words)
         if kind not in GIT_ALLOWED[mode]:
-            return f"{mode} mode: '{' '.join(words[:3])}' is not allowed. Commits, pushes and PRs belong to /complete; merges to /resolve-conflict."
-        if kind == "push" and args.split()[:1]:
-            base = args.split()[0]
-            if any(w == base or w.endswith(":" + base) for w in words[2:]):
-                return f"Pushing directly to the base branch '{base}' is not allowed."
+            return f"{mode} mode: '{' '.join(words[:3])}' is not allowed. Commits, pushes and PRs are yours to do; merges belong to /resolve-conflict."
         return None
     if is_read_only(words):
         return None

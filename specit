@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Usage: specit [branch | tag | commit]   (default: main)
+# Installs the specit workflow into the current folder:
+#   - copies .claude/ and README-specit.md
+#   - adds the guidelines to the end of CLAUDE.md and two lines to .gitignore,
+#     each inside "specit:start" / "specit:end" markers (re-running replaces them)
+set -euo pipefail
+
+REPO="subhasishdasfreelance/specit"
+REF="${1:-main}"
+MD_START='<!-- specit:start -->'
+MD_END='<!-- specit:end -->'
+GI_START='# specit:start'
+GI_END='# specit:end'
+GITIGNORE_LINES=$'.claude/runtime/\n.claude/settings.local.json'
+
+: "${GITHUB_TOKEN:?GITHUB_TOKEN is not set}"
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT      # the download is deleted when the script ends, even on errors
+src="$tmp/src"
+
+echo "Downloading $REPO @ $REF ..."
+curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
+  "https://api.github.com/repos/$REPO/tarball/${REF//\//%2F}" -o "$tmp/repo.tar.gz"
+mkdir "$src"
+tar xzf "$tmp/repo.tar.gz" -C "$src" --strip-components=1 --wildcards \
+  '*/.claude' '*/README.md' '*/guidelines.md'
+
+# What will happen to a file that gets a marked block: new, append or update.
+block_action() {   # file start-marker
+  if [[ ! -e $1 ]]; then echo "new"
+  elif grep -qxF "$2" "$1"; then echo "update"
+  else echo "append"
+  fi
+}
+
+# Remove the old marked block (if any), then add the new one at the end.
+add_block() {   # file start-marker end-marker text
+  local file=$1 start=$2 end=$3 text=$4
+  if [[ -e $file ]]; then
+    awk -v s="$start" -v e="$end" '$0 == s {skip = 1} !skip {print} $0 == e {skip = 0}' "$file" > "$tmp/block"
+    cat "$tmp/block" > "$file"
+  fi
+  printf '%s\n%s\n%s\n' "$start" "$text" "$end" >> "$file"
+}
+
+echo "Into: $PWD"
+(cd "$src" && find .claude -type f | sort) | while read -r f; do
+  if [[ -e $f ]]; then echo "  overwrite  $f"; else echo "  new        $f"; fi
+done
+if [[ -e README-specit.md ]]; then echo "  overwrite  README-specit.md"; else echo "  new        README-specit.md"; fi
+printf '  %-10s CLAUDE.md (guidelines block)\n' "$(block_action CLAUDE.md "$MD_START")"
+printf '  %-10s .gitignore (specit lines)\n' "$(block_action .gitignore "$GI_START")"
+
+read -rp "Proceed? (y/N) " answer
+[[ $answer == y ]] || { echo "Cancelled."; exit 0; }
+
+mkdir -p .claude
+cp -R "$src/.claude/." .claude/
+cp "$src/README.md" README-specit.md
+add_block CLAUDE.md "$MD_START" "$MD_END" "$(cat "$src/guidelines.md")"
+add_block .gitignore "$GI_START" "$GI_END" "$GITIGNORE_LINES"
+echo "Done. Restart Claude Code and run /hooks."

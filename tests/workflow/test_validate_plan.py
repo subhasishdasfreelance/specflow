@@ -14,44 +14,41 @@ class ValidatePlanTest(unittest.TestCase):
     def test_valid_plan(self):
         self.assertEqual(vp.validate(plan_text()), [])
 
-    def test_branch_must_match_file(self):
-        self.assertEqual(vp.validate(plan_text(), "feature/login"), [])
-        self.assertTrue(vp.validate(plan_text(), "bugfix/other"))
-
     def test_all_statuses_accepted(self):
         for s in vp.STATUSES:
-            t = s if s not in vp.DONE else "Built"
-            self.assertEqual(vp.validate(plan_text(s, t, t)), [], s)
+            self.assertEqual(vp.validate(plan_text(s, done=True)), [], s)
 
     def test_invalid_plan_status(self):
-        errors = vp.validate(plan_text(status="Done"))
-        self.assertIn("invalid plan status 'Done'", errors)
+        self.assertIn("invalid plan status 'Done'", vp.validate(plan_text(status="Done")))
 
-    def test_invalid_task_status(self):
-        self.assertIn("TASK-001: invalid status 'In Progress'",
-                      vp.validate(plan_text(t1="In Progress")))
+    def test_needs_todos(self):
+        text = plan_text().split("## Todo")[0] + "## Todo\n"
+        self.assertIn("no todos ('- [ ] step') in '## Todo'", vp.validate(text))
 
-    def test_duplicate_task_id(self):
-        text = plan_text().replace("TASK-002: Session", "TASK-001: Session")
-        self.assertIn("duplicate task id TASK-001", vp.validate(text))
-
-    def test_missing_task_field(self):
-        text = plan_text().replace("- Verify: unit test\n", "", 1)
-        self.assertIn("TASK-001: missing '- Verify:'", vp.validate(text))
-
-    def test_unknown_requirement(self):
-        text = plan_text().replace("- Requirements: FR-001\n", "- Requirements: FR-009\n")
-        self.assertIn("TASK-001: unknown requirement FR-009", vp.validate(text))
-
-    def test_missing_section_and_branch(self):
-        text = plan_text().replace("## Risks\n", "").replace("- Branch: feature/login\n", "")
+    def test_missing_section_and_status(self):
+        text = plan_text().replace("## Goal\n", "").replace("- Status: Pending\n", "")
         errors = vp.validate(text)
-        self.assertIn("missing section '## Risks'", errors)
-        self.assertIn("missing plan field '- Branch:'", errors)
+        self.assertIn("missing section '## Goal'", errors)
+        self.assertIn("missing plan field '- Status:'", errors)
 
-    def test_built_plan_needs_built_tasks(self):
-        self.assertIn("plan is Built but TASK-002 is Building",
-                      vp.validate(plan_text("Built", "Built", "Building")))
+    def test_needs_changes(self):
+        no_section = plan_text().split("## Changes")[0]
+        self.assertIn("missing section '## Changes'", vp.validate(no_section))
+        bullets = no_section + "## Changes\n- Add login\n"
+        self.assertIn("no changes ('1. change') in '## Changes'", vp.validate(bullets))
+
+    def test_changes_last_and_unique(self):
+        self.assertIn("'## Changes' must be the last section", vp.validate(plan_text() + "## Notes\n"))
+        dup = plan_text() + "3. Add an email/password check in `src/login.py`\n"
+        self.assertIn("duplicate changes in '## Changes' (changes must not overlap)", vp.validate(dup))
+
+    def test_duplicate_todos(self):
+        text = plan_text(notes="- [ ] Session lasts 1 day (src/session.py)\n")
+        self.assertIn("duplicate todos in '## Todo' (todos must not overlap)", vp.validate(text))
+
+    def test_built_plan_needs_all_todos_ticked(self):
+        self.assertIn("plan is Built but some todos are unchecked", vp.validate(plan_text("Built")))
+        self.assertEqual(vp.validate(plan_text("Built", done=True)), [])
 
     def test_cli_exit_codes(self):
         script = REPO / ".claude" / "scripts" / "validate_plan.py"

@@ -9,10 +9,10 @@ import sys
 import time
 from pathlib import Path
 
-MODES = ("analysis", "prd", "plan", "build", "verify", "vibe", "complete", "resolve")
+MODES = ("analysis", "prd", "plan", "build", "verify", "vibe", "resolve")
 # Slash command -> mode it authorizes.
 COMMANDS = {"prd": "prd", "plan": "plan", "build": "build", "verify": "verify", "vibe": "vibe",
-            "complete": "complete", "resolve-conflict": "resolve"}
+            "resolve-conflict": "resolve"}
 MAX_AGE = 6 * 3600  # seconds; an authorization never outlives this
 SID_RE = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
 ANALYSIS = {"mode": "analysis", "args": "", "prompt": ""}

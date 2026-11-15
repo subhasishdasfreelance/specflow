@@ -5,7 +5,7 @@ import unittest
 
 from helpers import SID, HookTest, plan_text
 
-PLAN = "docs/tickets/feature/login.md"
+PLAN = "tickets/feature/login.md"
 
 
 class AnalysisModeTest(HookTest):
@@ -171,62 +171,61 @@ class PlanModeTest(HookTest):
 
     def test_new_plan_must_be_pending(self):
         self.slash("plan")
-        self.assertDenied(self.write(PLAN, plan_text("Planned", "Planned", "Planned")))
+        self.assertDenied(self.write(PLAN, plan_text("Planned")))
 
     def test_approval_requires_plan_approve(self):
         self.put(PLAN, plan_text())
         self.slash("plan", "revise tweak")
-        self.assertDenied(self.edit(PLAN, "- Status: Pending\n- Branch", "- Status: Planned\n- Branch"))
+        self.assertDenied(self.edit(PLAN, "- Status: Pending\n\n## Goal", "- Status: Planned\n\n## Goal"))
         self.slash("plan", "approve")
-        self.assertAllowed(self.write(PLAN, plan_text("Planned", "Planned", "Planned")))
+        self.assertAllowed(self.write(PLAN, plan_text("Planned")))
 
     def test_approve_cannot_change_content(self):
         self.put(PLAN, plan_text())
         self.slash("plan", "approve")
-        self.assertDenied(self.write(PLAN, plan_text("Planned", "Planned", "Planned", approach="Other")))
+        self.assertDenied(self.write(PLAN, plan_text("Planned", notes="- [ ] Extra")))
 
     def test_revise_resets_to_pending(self):
-        self.put(PLAN, plan_text("Building", "Built", "Building"))
+        self.put(PLAN, plan_text("Building", done=True))
         self.slash("plan", "revise add SSO")
-        self.assertAllowed(self.write(PLAN, plan_text("Pending", "Built", "Pending", approach="New")))
-        self.assertDenied(self.write(PLAN, plan_text("Verified", "Built", "Pending")))
+        self.assertAllowed(self.write(PLAN, plan_text("Pending", done=True, notes="- [ ] SSO")))
+        self.assertDenied(self.write(PLAN, plan_text("Verified", done=True)))
 
 
 class BuildModeTest(HookTest):
     def test_pending_plan_refused(self):
         self.put(PLAN, plan_text())
         self.slash("build")
-        self.assertDenied(self.edit(PLAN, "- Status: Pending\n- Branch", "- Status: Building\n- Branch"))
+        self.assertDenied(self.edit(PLAN, "- Status: Pending\n\n## Goal", "- Status: Building\n\n## Goal"))
         self.assertDenied(self.write("src/login.py"))
         self.assertDenied(self.bash("npm install"))
 
     def test_planned_plan_permits_build(self):
-        self.put(PLAN, plan_text("Planned", "Planned", "Planned"))
+        self.put(PLAN, plan_text("Planned"))
         self.slash("build")
         self.assertDenied(self.write("src/login.py"))  # not Building yet
-        self.assertAllowed(self.edit(PLAN, "- Status: Planned\n- Branch", "- Status: Building\n- Branch"))
-        self.put(PLAN, plan_text("Building", "Building", "Planned"))
+        self.assertAllowed(self.edit(PLAN, "- Status: Planned\n\n## Goal", "- Status: Building\n\n## Goal"))
+        self.put(PLAN, plan_text("Building"))
         self.assertAllowed(self.write("src/login.py"))
         self.assertAllowed(self.bash("mkdir -p src/auth && npm test"))
-        self.assertAllowed(self.bash("git checkout -b feature/us-001-login"))
-        self.assertAllowed(self.edit(PLAN, "- Status: Building\n- Requirements: FR-001\n",
-                                     "- Status: Built\n- Requirements: FR-001\n"))
+        self.assertAllowed(self.edit(PLAN, "- [ ] Users log in", "- [x] Users log in"))
+        self.assertDenied(self.edit(PLAN, "- [ ] Users log in", "- [x] Users sign up"))
 
     def test_build_limits(self):
-        self.put(PLAN, plan_text("Building", "Building", "Planned"))
+        self.put(PLAN, plan_text("Building"))
         self.slash("build")
         self.assertDenied(self.write("docs/PRD.md"))
-        self.assertDenied(self.edit(PLAN, "Use session middleware.", "Use JWT."))
-        self.assertDenied(self.edit(PLAN, "- Status: Building\n- Branch", "- Status: Verified\n- Branch"))
+        self.assertDenied(self.edit(PLAN, "Session lasts 1 day", "Session lasts 1 year"))
+        self.assertDenied(self.edit(PLAN, "- Status: Building\n\n## Goal", "- Status: Verified\n\n## Goal"))
         for cmd in ["git commit -m x", "git push", "git reset --hard", "git stash",
-                    "git checkout main", "git merge main", "git rebase main", "git clean -fd",
+                    "git checkout main", "git checkout -b x", "git switch -c x", "git merge main", "git rebase main", "git clean -fd",
                     "gh pr create", "sudo rm x"]:
             self.assertDenied(self.bash(cmd))
 
 
 class VerifyModeTest(HookTest):
     def test_verify_is_read_only(self):
-        self.put(PLAN, plan_text("Built", "Built", "Built"))
+        self.put(PLAN, plan_text("Built", done=True))
         self.slash("verify", "main")
         self.assertDenied(self.write("src/login.py"))
         self.assertDenied(self.write("docs/PRD.md"))
@@ -239,11 +238,10 @@ class VerifyModeTest(HookTest):
             self.assertAllowed(self.bash(cmd))
 
     def test_verify_sets_only_verified_or_blocked(self):
-        self.put(PLAN, plan_text("Built", "Built", "Built"))
+        self.put(PLAN, plan_text("Built", done=True))
         self.slash("verify", "main")
-        self.assertDenied(self.edit(PLAN, "- Status: Built\n- Branch", "- Status: Human verified\n- Branch"))
-        self.assertAllowed(self.edit(PLAN, "- Status: Built\n- Branch", "- Status: Verified\n- Branch"))
-        self.assertAllowed(self.edit(PLAN, "## Verification\nNot run.", "## Verification\nAll good."))
+        self.assertDenied(self.edit(PLAN, "- Status: Built\n\n## Goal", "- Status: Human verified\n\n## Goal"))
+        self.assertAllowed(self.edit(PLAN, "- Status: Built\n\n## Goal", "- Status: Verified\n\n## Goal"))
 
 
 class VibeModeTest(HookTest):
@@ -253,16 +251,16 @@ class VibeModeTest(HookTest):
         self.assertAllowed(self.write("src/widget.py"))
         self.assertAllowed(self.bash("npm install left-pad && touch src/x"))
         self.assertDenied(self.write("docs/PRD.md"))
-        self.assertDenied(self.edit(PLAN, "- Status: Pending\n- Branch", "- Status: Built\n- Branch"))
+        self.assertDenied(self.edit(PLAN, "- Status: Pending\n\n## Goal", "- Status: Built\n\n## Goal"))
         self.assertDenied(self.bash("git commit -m x"))
 
 
 class CompleteModeTest(HookTest):
     def test_complete_flow(self):
-        self.put(PLAN, plan_text("Verified", "Verified", "Verified"))
+        self.put(PLAN, plan_text("Verified", done=True))
         self.slash("complete", "main")
         self.assertDenied(self.write("src/login.py"))
-        self.assertAllowed(self.edit(PLAN, "- Status: Verified\n- Branch", "- Status: Human verified\n- Branch"))
+        self.assertAllowed(self.edit(PLAN, "- Status: Verified\n\n## Goal", "- Status: Human verified\n\n## Goal"))
         for cmd in ["git add -A", "git commit -F /tmp/msg.txt", "git push -u origin feature/us-001-login",
                     "gh pr create --base main --head feature/us-001-login --title x --body-file /tmp/b.md"]:
             self.assertAllowed(self.bash(cmd))
@@ -270,9 +268,9 @@ class CompleteModeTest(HookTest):
             self.assertDenied(self.bash(cmd))
 
     def test_complete_needs_verified_plan(self):
-        self.put(PLAN, plan_text("Built", "Built", "Built"))
+        self.put(PLAN, plan_text("Built", done=True))
         self.slash("complete", "main")
-        self.assertDenied(self.edit(PLAN, "- Status: Built\n- Branch", "- Status: Human verified\n- Branch"))
+        self.assertDenied(self.edit(PLAN, "- Status: Built\n\n## Goal", "- Status: Human verified\n\n## Goal"))
 
 
 CONFLICT = "a\n<<<<<<< HEAD\nmine\n=======\ntheirs\n>>>>>>> main\n"
@@ -301,7 +299,7 @@ class ResolveModeTest(HookTest):
             self.assertDenied(self.bash(cmd))
 
     def test_merge_not_allowed_elsewhere(self):
-        self.put(PLAN, plan_text("Building", "Building", "Planned"))
+        self.put(PLAN, plan_text("Building"))
         for mode in ["build", "vibe", "verify"]:
             self.slash(mode, "main")
             self.assertDenied(self.bash("git pull origin main"))

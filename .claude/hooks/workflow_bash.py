@@ -39,7 +39,7 @@ GH_READ = {("pr", "view"), ("pr", "list"), ("pr", "status"), ("pr", "diff"),
 # What each mode may do with git / gh, beyond plain reads.
 GIT_ALLOWED = {
     "analysis": {"read"}, "prd": {"read"}, "plan": {"read"}, "verify": {"read"},
-    "build": {"read", "branch", "stage"}, "vibe": {"read", "branch", "stage"},
+    "build": {"read", "stage"}, "vibe": {"read", "stage"},
     "complete": {"read", "branch", "stage", "commit", "push", "pr-create"},
     "resolve": {"read", "stage", "commit", "merge"},
 }
@@ -47,7 +47,7 @@ SCRIPT_OK = re.compile(r"^(test|lint|typecheck|type-check|check|build)(:|$)")
 GRADLE_OK = re.compile(r"^(:?[\w-]+:)*(test|lint|check|build|assemble)\w*$", re.I)
 FIX_FLAGS = {"--fix", "--write", "-w", "-u", "--update", "--updateSnapshot",
              "--update-snapshots"}
-PROTECTED_TEXT = (".claude/", ".claude\\", "CLAUDE.md", "docs/PRD.md", "docs/tickets", ".git/")
+PROTECTED_TEXT = (".claude/", ".claude\\", "CLAUDE.md", "docs/PRD.md", "tickets/", ".git/")
 
 
 def tokenize(cmd):

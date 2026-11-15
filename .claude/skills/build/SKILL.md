@@ -1,24 +1,24 @@
 ---
 name: build
-description: Implement the approved tasks of a ticket.
+description: Implement the approved todo list of a ticket.
 disable-model-invocation: true
-argument-hint: "<branch> [TASK-###]"
+argument-hint: "<branch>"
 ---
 
-Args: `$ARGUMENTS`. Ticket: `docs/tickets/<branch>.md`.
+Args: `$ARGUMENTS`. Ticket: `tickets/<branch>.md`.
 
 **Check first (stop if any fail):**
 - No branch given: ask "Run `/build <branch>`" and stop.
 - The ticket validates and is `Planned` or `Building`. If it's Pending, say "Run `/plan approve <branch>`".
-- Say "on `<current>` → `<branch>` (base `<Base>`)". On Base with `<branch>` not yet created: `git switch -c <branch>`. On any other branch: stop.
+- Say "on `<current>`, ticket `<branch>`". Never create or switch branches. If `<current>` isn't `<branch>`, ask the user whether to build on `<current>`; no: stop.
 - Never overwrite uncommitted changes you didn't make.
 
-**Work:** ticket → `Building`. Then for each approved task, in dependency order:
-1. Task → `Building`.
-2. Implement only its `Done when`, following CLAUDE.md › Code. Unclear? Ask and stop.
-3. Add tests and run them with the project's own tooling.
-4. Task → `Built` once its checks pass.
+**Work:** ticket → `Building`. Then work through `## Todo`:
+- Do only what the todos need, following CLAUDE.md › Code. Add tests. Unclear? Ask and stop.
+- Todos that touch separate files run in parallel: one subagent each, started in a single message. Only you edit the ticket.
+- Tick each todo (`- [x]`) as soon as it's done, including each parallel one as its subagent reports back.
+- Run the project's tests once at the end.
 
-Scope change needed: set the task to `Blocked` with a `- Blocker:` line, then say "Run `/plan revise <branch> <change>`".
+Scope change needed: ticket → `Blocked` with a `- Blocker:` line, then say "Run `/plan revise <branch> <change>`".
 
-**Done:** ticket → `Built`, validate. Reply in a few lines: tasks done, files changed, tests. Then "Next: `/verify <Base>`." No commits.
+**Done:** all ticked and tests pass → ticket `Built`, validate. Reply in a few lines: files changed, tests. Then "Next: `/verify <base>`", where `<base>` is the branch `<branch>` was cut from (the other local branch whose `git merge-base` with HEAD is newest; default branch if unsure). No commits.

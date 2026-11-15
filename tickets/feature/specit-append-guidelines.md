@@ -1,6 +1,6 @@
 # feature/specit-append-guidelines
 
-- Status: Verified
+- Status: Human verified
 
 ## Goal
 People who install specit keep their own files, and can cleanly remove what specit added.

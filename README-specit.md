@@ -13,7 +13,7 @@ It works for any kind of project: backend, frontend, Android, iOS, scripts. Noth
 
 ## Setup (once per project)
 1. Install Claude Code, Python 3 and git. Install `gh` if you want `/complete` to open PRs.
-2. Copy `.claude/`, `CLAUDE.md` and `.gitignore` into your project.
+2. Copy `.claude/`, `CLAUDE.md`, `.gitignore`, `README-specit.md` and `tests/workflow/` into your project.
 3. Open the project in Claude Code (restart it if it was already open).
 4. Type `/hooks` and check the workflow hooks are listed.
 
@@ -63,6 +63,18 @@ Claude can never edit `.claude/`, `CLAUDE.md` or `.git/`. To change them with Cl
 ```
 Delete that file and restart Claude Code when you're done.
 
+## Uninstall
+Claude can't remove the workflow (the hooks block it), so do it yourself:
+1. Close Claude Code.
+2. Delete the workflow files:
+   ```
+   rm -rf .claude CLAUDE.md README-specit.md tests/workflow
+   ```
+   If your project already had its own `CLAUDE.md` or `.claude/` before you added the workflow, delete only the workflow's parts.
+3. Remove the workflow lines from `.gitignore` (`.claude/runtime/`, `.claude/settings.local.json`).
+4. Keep or delete `docs/PRD.md` and `docs/tickets/`. They're plain Markdown and still useful as a record.
+5. Reopen Claude Code and type `/hooks` to check that no workflow hooks are listed.
+
 ## Limits
 - The hooks are guardrails, not a sandbox. A program run during `/build` or `/vibe` (e.g. a test script) can still write files.
 - `/verify` runs your test, lint and build commands, which may create build output. Source edits stay blocked.
@@ -72,6 +84,7 @@ Delete that file and restart Claude Code when you're done.
 ## Files
 ```
 CLAUDE.md                      rules Claude reads every session
+README-specit.md               this guide
 docs/PRD.md                    the product
 docs/tickets/<branch>.md       one ticket per branch
 .claude/skills/                the commands

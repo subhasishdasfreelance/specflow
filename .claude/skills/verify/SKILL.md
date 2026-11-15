@@ -19,4 +19,4 @@ Args: `$ARGUMENTS`. Ticket: `tickets/<current-branch>.md`. Read-only: never chan
 
    All pass: add `Claude verified` to the status. Otherwise set it to `Blocked` with a `- Blocker:` line and stop.
 6. Adding to the status: `Built` → the new one; the other one → `<other> + <new>`; already there → no change. Validate.
-7. Both verifications present: give a PR link, `https://github.com/<owner>/<repo>/compare/<t>...<branch>?expand=1&title=<title>&body=<body>` (owner/repo from `git remote get-url origin`, values URL-encoded). Title: `<branch>: <Goal>`. Body: the ticket path only. Remind the user to commit and push first. Otherwise say which verification is still missing.
+7. Both verifications present: give a PR link, `https://github.com/<owner>/<repo>/compare/<t>...<branch>?expand=1&body=<body>` (owner/repo from `git remote get-url origin`, body URL-encoded). No title (the user fills it in). Body: the ticket's Goal only, without the branch name or ticket path. Remind the user to commit and push first. Otherwise say which verification is still missing.

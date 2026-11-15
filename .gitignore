@@ -1,0 +1,4 @@
+# Claude Code workflow: session state and personal settings
+.claude/runtime/
+.claude/settings.local.json
+__pycache__/

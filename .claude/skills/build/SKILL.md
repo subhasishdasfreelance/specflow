@@ -9,11 +9,11 @@ Args: `$ARGUMENTS`. Ticket: `tickets/<branch>.md`.
 
 **Check first (stop if any fail):**
 - No branch given: ask "Run `/build <branch>`" and stop.
-- The ticket validates and is `Planned` or `Building`. If it's Pending, say "Run `/plan approve <branch>`".
+- The ticket validates and is `Planned`, `Building` or `Blocked`. If it's Pending, say "Run `/plan approve <branch>`".
 - Say "on `<current>`, ticket `<branch>`". Never create or switch branches. If `<current>` isn't `<branch>`, ask the user whether to build on `<current>`; no: stop.
 - Never overwrite uncommitted changes you didn't make.
 
-**Work:** ticket → `Building`. Then work through `## Todo`:
+**Work:** ticket → `Building`. If it was `Blocked`: remove the `- Blocker:` line, untick the todos the blocker is about, and fix them as the current plan says. Then work through `## Todo`:
 - Do only what the todos need, following CLAUDE.md › Code. Add tests. Unclear? Ask and stop.
 - Todos that touch separate files run in parallel: one subagent each, started in a single message. Only you edit the ticket.
 - Tick each todo (`- [x]`) as soon as it's done, including each parallel one as its subagent reports back.

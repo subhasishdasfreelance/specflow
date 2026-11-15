@@ -8,8 +8,10 @@ import re
 import sys
 from pathlib import Path
 
-STATUSES = ["Pending", "Planned", "Building", "Built", "Verified", "Human verified", "Blocked"]
-DONE = {"Built", "Verified", "Human verified"}
+VERIFIED = ["Claude verified", "Human verified", "Claude verified + Human verified",
+            "Human verified + Claude verified"]
+STATUSES = ["Pending", "Planned", "Building", "Built", *VERIFIED, "Blocked"]
+DONE = {"Built", *VERIFIED}
 SECTIONS = ["Goal", "Todo", "Changes"]
 PLAN_FIELDS = ["Status"]
 

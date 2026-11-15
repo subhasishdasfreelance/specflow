@@ -12,7 +12,7 @@ It works for any kind of project: backend, frontend, Android, iOS, scripts. Noth
 - When something is unclear, Claude **asks you** instead of guessing.
 
 ## Setup (once per project)
-1. Install Claude Code, Python 3, git, curl and tar. Install `gh` if you want `/complete` to open PRs.
+1. Install Claude Code, Python 3, git, curl and tar.
 2. Copy the `specit` script from this repo to a folder on your `PATH` (e.g. `~/.local/bin/`) and make it executable: `chmod +x ~/.local/bin/specit`.
 3. Set `GITHUB_TOKEN` to a token that can read this repo.
 4. In your project folder, run `specit` (or `specit <branch|tag|commit>`). It lists every change and asks before doing anything.
@@ -31,7 +31,7 @@ Running `specit` again replaces the marked blocks instead of adding new ones. Wh
 
 ## Day-to-day
 ```
-/prd  →  talk  →  /plan  →  /plan approve  →  /build  →  /verify  →  you test  →  /complete
+/prd  →  talk  →  /plan  →  /plan approve  →  /build  →  /verify  →  you test  →  /verify human  →  open the PR
 ```
 
 | # | You type | What Claude does |
@@ -44,7 +44,7 @@ Running `specit` again replaces the marked blocks instead of adding new ones. Wh
 | 6 | `/build feature/reminders` | Stays on the current branch (asks if it isn't `feature/reminders`) and writes the code and tests, ticking off the todo list. |
 | 7 | `/verify main` | Reviews the branch against `main` (`/build` suggests the branch you cut from), runs your tests, lint and build. Changes no code. |
 | 8 | (you) | Try it yourself. |
-| 9 | `/complete main` | Marks it human verified, commits, pushes and opens a PR into `main`. |
+| 9 | `/verify human main` | Records that you tested it. Once Claude and you have both verified, it gives a link that opens a pre-filled PR into `main`. You commit and push. |
 
 **Other commands**
 - `/vibe Fix the typo on the login page`: a quick change without a ticket. Good for tiny fixes and experiments.
@@ -61,8 +61,9 @@ Running `specit` again replaces the marked blocks instead of adding new ones. Wh
 | Pending | `/plan` |
 | Planned | `/plan approve` |
 | Building, Built | `/build` |
-| Verified | `/verify` |
-| Human verified | `/complete` |
+| Claude verified | `/verify` |
+| Human verified | `/verify human` |
+| Claude verified + Human verified (or the other order) | whichever of the two runs second |
 | Blocked | `/plan`, `/build`, `/verify` (with a reason) |
 
 - Check tickets are well-formed: `python3 .claude/scripts/validate_plan.py`
@@ -79,7 +80,7 @@ Delete that file and restart Claude Code when you're done.
 Claude can't remove the workflow (the hooks block it), so do it yourself. The steps below remove only what `specit` added and leave everything else in place.
 
 **What gets removed**
-- Files: `README-specit.md`, `.claude/settings.json`, `.claude/scripts/validate_plan.py`, the 7 `.claude/hooks/workflow_*.py` files, and the `.claude/skills/` files of `build`, `complete`, `plan`, `prd`, `resolve-conflict`, `verify` and `vibe`.
+- Files: `README-specit.md`, `.claude/settings.json`, `.claude/scripts/validate_plan.py`, the 7 `.claude/hooks/workflow_*.py` files, and the `.claude/skills/` files of `build`, `plan`, `prd`, `resolve-conflict`, `verify` and `vibe`.
 - Folders the workflow created: `.claude/runtime/` and `.claude/*/__pycache__/`.
 - Folders left empty afterwards (a folder that still has your files in it is kept).
 - The marked block at the end of `CLAUDE.md` and of `.gitignore`. Either file is deleted only if nothing else is left in it.
@@ -90,10 +91,10 @@ Claude can't remove the workflow (the hooks block it), so do it yourself. The st
    ```bash
    rm -f README-specit.md .claude/settings.json .claude/scripts/validate_plan.py \
      .claude/hooks/workflow_{bash,policy,pre_tool,prompt_expansion,prompt_submit,state,stop}.py \
-     .claude/skills/{build,complete,plan,prd,resolve-conflict,verify,vibe}/SKILL.md \
+     .claude/skills/{build,plan,prd,resolve-conflict,verify,vibe}/SKILL.md \
      .claude/skills/plan/plan-template.md .claude/skills/prd/prd-template.md
    rm -r .claude/runtime .claude/*/__pycache__ 2>/dev/null
-   rmdir .claude/skills/{build,complete,plan,prd,resolve-conflict,verify,vibe} \
+   rmdir .claude/skills/{build,plan,prd,resolve-conflict,verify,vibe} \
      .claude/skills .claude/hooks .claude/scripts .claude 2>/dev/null
    for f in CLAUDE.md .gitignore; do
      [ -f "$f" ] || continue

@@ -17,7 +17,7 @@
     ],
     "UserPromptExpansion": [
       {
-        "matcher": "prd|plan|build|verify|vibe|complete|resolve-conflict",
+        "matcher": "prd|plan|build|verify|vibe|resolve-conflict",
         "hooks": [
           {
             "type": "command",

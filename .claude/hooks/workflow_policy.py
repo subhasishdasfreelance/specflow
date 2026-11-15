@@ -18,8 +18,11 @@ RULES = {
     "plan": {("*", "Pending"), ("*", "Blocked")},
     "build": {("Planned", "Building"), ("Building", "Built"), ("Blocked", "Building"),
               ("Planned", "Blocked"), ("Building", "Blocked")},
-    "verify": {("Built", "Verified"), ("Built", "Blocked")},
-    "complete": {("Verified", "Human verified")},
+    # /verify adds "Claude verified"; /verify human adds "Human verified". Both, in the order done.
+    "verify": {("Built", "Claude verified"), ("Built", "Human verified"),
+               ("Claude verified", "Claude verified + Human verified"),
+               ("Human verified", "Human verified + Claude verified"),
+               ("Built", "Blocked"), ("Claude verified", "Blocked"), ("Human verified", "Blocked")},
 }
 FREE_LINE = re.compile(r"^\s*-\s*(Status|Updated|Blocker):")
 TICKED = re.compile(r"^(\s*-\s*)\[[xX]\]")
@@ -162,7 +165,7 @@ def transition_error(mode, approve, old_text, new_text):
 
 def plan_decision(mode, args, tool, ti, path):
     if mode not in RULES:
-        return "Tickets change only through /plan (statuses via /build, /verify, /complete)."
+        return "Tickets change only through /plan (statuses via /build, /verify)."
     try:
         old = Path(path).read_text(encoding="utf-8")
     except FileNotFoundError:

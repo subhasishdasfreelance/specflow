@@ -10,7 +10,7 @@ Args: `$ARGUMENTS`. Ticket: `tickets/<current-branch>.md`. Read-only: never chan
 1. No target given: show `git branch -a` and the current branch, ask "Run `/verify <target>` or `/verify human <target>`", and stop.
 2. The ticket must validate and be `Built` or one of the verified statuses.
 3. **`/verify human <t>`** (the user tested it by hand): add `Human verified` to the status and skip to step 6.
-4. **`/verify <t>`** (Claude reviews): read `git log <t>..HEAD`, `git diff <t>...HEAD`, `git diff --cached`, `git diff`, and untracked files (`git ls-files --others --exclude-standard`; read them directly). Check each todo's outcome. Run the project's existing test, lint and build commands. Review like a PR: bugs, security, missing tests, ticket deviations, bloat.
+4. **`/verify <t>`** (Claude reviews): read `git log <t>..HEAD`, `git diff <t>...HEAD`, `git diff --cached`, `git diff`, and untracked files (`git ls-files --others --exclude-standard`; read them directly). Check each todo's outcome. Run the project's existing test, lint and build commands. Review like a PR: bugs, security, missing tests, ticket deviations, bloat. Flag every change not needed by the Goal or a todo as `[Scope]` (extra work counts as a failure).
 5. Report briefly:
    - todo ✅/❌
    - checks run and their results

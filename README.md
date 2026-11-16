@@ -4,7 +4,7 @@ A small setup that makes Claude **think first, plan second, and code only when y
 It works for any kind of project: backend, frontend, Android, iOS, scripts. Nothing here is tied to a language or framework.
 
 ## In one minute
-- Talk to Claude normally and it only **reads and advises**. It won't change files.
+- Talk to Claude normally and it only **reads and advises**, in short, skimmable replies. It won't change files; ask it to and it just says "Analysis mode."
 - You type a **command** (like `/build`) to let it write. That permission lasts for **one message only**.
 - Everything is written down in two places:
   - `docs/PRD.md`: what the product is (the big picture).
@@ -37,17 +37,18 @@ Running `specit` again replaces the marked blocks instead of adding new ones. Wh
 | # | You type | What Claude does |
 |---|---|---|
 | 1 | `/prd A booking app for small clinics, web + Android` | Asks questions about anything vague, then writes `docs/PRD.md`. Skip this if you already have a PRD. |
-| 2 | `How should we add appointment reminders?` | Reads the code and other branches' tickets, asks questions, suggests an approach. Writes nothing. |
+| 2 | `How should we add appointment reminders?` | Reads the code, asks questions, suggests an approach. Writes nothing. (Run `/history reminders` to check earlier tickets.) |
 | 3 | `/plan feature/reminders` | Writes `tickets/feature/reminders.md` (goal and todo list). |
 | 4 | `/plan revise feature/reminders Also send SMS` | Updates the ticket. |
 | 5 | `/plan approve feature/reminders` | Marks the ticket approved. Nothing else changes. |
 | 6 | `/build feature/reminders` | Stays on the current branch (asks if it isn't `feature/reminders`) and writes the code and tests, ticking off the todo list. |
-| 7 | `/verify main` | Reviews the branch against `main` (`/build` suggests the branch you cut from), runs your tests, lint and build. Changes no code. |
+| 7 | `/verify main` | Reviews the branch against `main` (`/build` suggests the branch you cut from), runs your tests, lint and build. Flags anything done beyond the ticket's goal. Changes no code. |
 | 8 | (you) | Try it yourself. |
 | 9 | `/verify human main` | Records that you tested it. Once Claude and you have both verified, it gives a link that opens a pre-filled PR into `main`. You commit and push. |
 
 **Other commands**
 - `/vibe Fix the typo on the login page`: a quick change without a ticket. Good for tiny fixes and experiments.
+- `/history appointment reminders`: searches tickets on every branch for the same or similar work and gives a short report: which branch, its status, and whether the work is new, partly done or already done. Read-only.
 - `/resolve-conflict main`: pulls `main` into your branch, fixes the conflicts, runs tests and commits. **It does not push**; you push.
 
 ## Good to know
@@ -80,7 +81,7 @@ Delete that file and restart Claude Code when you're done.
 Claude can't remove the workflow (the hooks block it), so do it yourself. The steps below remove only what `specit` added and leave everything else in place.
 
 **What gets removed**
-- Files: `README-specit.md`, `.claude/settings.json`, `.claude/scripts/validate_plan.py`, the 7 `.claude/hooks/workflow_*.py` files, and the `.claude/skills/` files of `build`, `plan`, `prd`, `resolve-conflict`, `verify` and `vibe`.
+- Files: `README-specit.md`, `.claude/settings.json`, `.claude/scripts/validate_plan.py`, the 7 `.claude/hooks/workflow_*.py` files, and the `.claude/skills/` files of `build`, `history`, `plan`, `prd`, `resolve-conflict`, `verify` and `vibe`.
 - Folders the workflow created: `.claude/runtime/` and `.claude/*/__pycache__/`.
 - Folders left empty afterwards (a folder that still has your files in it is kept).
 - The marked block at the end of `CLAUDE.md` and of `.gitignore`. Either file is deleted only if nothing else is left in it.
@@ -91,10 +92,10 @@ Claude can't remove the workflow (the hooks block it), so do it yourself. The st
    ```bash
    rm -f README-specit.md .claude/settings.json .claude/scripts/validate_plan.py \
      .claude/hooks/workflow_{bash,policy,pre_tool,prompt_expansion,prompt_submit,state,stop}.py \
-     .claude/skills/{build,plan,prd,resolve-conflict,verify,vibe}/SKILL.md \
+     .claude/skills/{build,history,plan,prd,resolve-conflict,verify,vibe}/SKILL.md \
      .claude/skills/plan/plan-template.md .claude/skills/prd/prd-template.md
    rm -r .claude/runtime .claude/*/__pycache__ 2>/dev/null
-   rmdir .claude/skills/{build,plan,prd,resolve-conflict,verify,vibe} \
+   rmdir .claude/skills/{build,history,plan,prd,resolve-conflict,verify,vibe} \
      .claude/skills .claude/hooks .claude/scripts .claude 2>/dev/null
    for f in CLAUDE.md .gitignore; do
      [ -f "$f" ] || continue

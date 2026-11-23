@@ -10,7 +10,7 @@ Works for any stack (backend, frontend, mobile, etc.): use the project's own too
 
 **Truth:** `docs/PRD.md` covers the product (no stories, no history). `tickets/<branch>.md` holds one plan per branch and is the source of truth for that work. Scope changes go only through re-running `/plan`.
 
-**Statuses:** `Planned (unverified) → Planned → Building → Built → Verified (not human-verified) → Verified`. A re-run of `/plan` sets `Planned (revised, unverified)`. Only the user deletes a note in brackets. Requirement or technical problems go under `## Questions` / `## Blockers` at the end of the plan. Validate with `python3 .claude/scripts/validate_plan.py`
+**Statuses:** `Planned (unverified) → Planned → Building → Built → Verified (not human-verified) → Verified`. A re-run of `/plan` sets `Planned (revised, unverified)`. Only the user deletes a note in brackets. Only `/plan` writes plan text: requirement or technical problems go in as ❓ / ⛔ items next to their todo, and only those stop `/build`. Validate with `python3 .claude/scripts/validate_plan.py`
 
 ## Code
 - Human-friendly first: clear names, plain flow, explicit over clever.

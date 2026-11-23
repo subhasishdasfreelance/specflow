@@ -2,14 +2,14 @@
 """Print a GitHub link that opens a pre-filled PR from the current branch. Read-only.
 
 Usage: python3 .claude/scripts/pr_link.py <target-branch>
-The PR body is the Goal of tickets/<branch>.md, if that ticket exists.
+The PR body is the Goal of tickets/<branch>.md, if that ticket exists in the new structure.
 """
 import re
 import subprocess
 import sys
 from urllib.parse import quote
 
-from validate_plan import tickets_dir
+from validate_plan import SECTION_RE, is_new_structure, tickets_dir
 
 
 def git(*args):
@@ -23,10 +23,12 @@ def repo_path(remote_url):
 
 
 def goal(ticket_text):
+    if not is_new_structure(ticket_text):
+        return ""
     lines, inside = [], False
     for line in ticket_text.splitlines():
-        if line.startswith("## "):
-            inside = line.strip() == "## Goal"
+        if SECTION_RE.match(line):
+            inside = line.startswith("Goal:")
         elif inside and line.strip():
             lines.append(line.strip())
     return " ".join(lines)

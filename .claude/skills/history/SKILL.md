@@ -9,10 +9,10 @@ Topic: `$ARGUMENTS`. Read-only: never change files or git state.
 
 1. No topic given: ask "Run `/history <topic>`" and stop.
 2. List branches (`git branch -a`). Search tickets everywhere: `git grep -i -l <term> <branch> -- tickets` for each branch, plus the working tree. Try a few synonyms.
-3. Read each match: Goal, Status, Blocker, and `git log -1 --format=%cs <branch>`. Also check the code for an existing implementation.
+3. Skip tickets in the old structure (no line starting with `Status:`). Read each other match: Goal, Status, ⛔ items, and `git log -1 --format=%cs <branch>`. Also check the code for an existing implementation.
 4. Report only, minimal and skimmable:
    - One line per match: `branch` · Status · same / similar · one-line Goal · last change date
-   - Blockers, if any
+   - ⛔ items, if any
    - Verdict: new / partly done / already done (on which branch)
 
    Nothing found: say "No earlier tickets for this."

@@ -2,7 +2,7 @@ import json
 import subprocess
 import unittest
 
-from helpers import HookTest, plan_text
+from helpers import OLD_PLAN, HookTest, plan_text
 
 PLAN = "tickets/feature/login.md"
 
@@ -44,9 +44,18 @@ class PrecheckTest(HookTest):
             self.assertIsNone(self.refused("build"))
 
     def test_build_refused_with_questions_or_blockers(self):
-        for section in ["## Questions\n1. SSO too?\n", "## Blockers\n- No test key\n"]:
-            self.put(PLAN, plan_text("Planned", notes="\n" + section))
-            self.assertIn("## Questions", self.refused("build"))
+        for item in ["❓ SSO too?\n  1. Or email only.\n", "⛔ No test key\n  1. Ask for one.\n"]:
+            self.put(PLAN, plan_text("Planned", notes=item))
+            self.assertIn("❓ / ⛔", self.refused("build"))
+
+    def test_build_allowed_with_warnings_and_out_of_scope(self):
+        for item in ["⚠️ Slow on old phones\n  1. Test on one.\n", "❌ SSO\n  1. Later ticket.\n"]:
+            self.put(PLAN, plan_text("Planned", notes=item))
+            self.assertIsNone(self.refused("build"))
+
+    def test_old_structure_ticket_counts_as_no_plan(self):
+        self.put(PLAN, OLD_PLAN)
+        self.assertIn("no plan", self.refused("build"))
 
     def test_verify_plan_needs_built(self):
         self.put(PLAN, plan_text("Building"))

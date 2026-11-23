@@ -13,23 +13,22 @@ SID = "test-session-1"
 
 
 def plan_text(status="Planned (unverified)", done=False, notes=""):
-    box = "x" if done else " "
-    return f"""# feature/login
+    mark = "✅" if done else "📝"
+    return f"""feature/login
+Status: {status}
 
-- Status: {status}
-
-## Goal
+Goal:
 Users log in to see their data.
 
-## Todo
-- [{box}] Users log in with email and password (src/login.py)
-
-  Add an email/password check in `src/login.py`.
-
-- [{box}] Session lasts 1 day (src/session.py)
-
-  Store sessions with a 1-day expiry in `src/session.py`.
+Todo:
+{mark} Users log in with email and password (src/login.py)
+  1. Add an email/password check in src/login.py.
+{mark} Session lasts 1 day (src/session.py)
+  1. Store sessions with a 1-day expiry in src/session.py.
 {notes}"""
+
+
+OLD_PLAN = "# feature/login\n\n- Status: Planned\n\n## Goal\nOld.\n\n## Todo\n- [ ] Old todo\n  Old change.\n"
 
 
 class HookTest(unittest.TestCase):

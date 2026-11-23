@@ -177,7 +177,7 @@ class PlanModeTest(HookTest):
     def test_revise_marks_revised(self):
         self.put(PLAN, plan_text("Building", done=True))
         self.slash("plan", "add SSO")
-        sso = "- [ ] SSO (src/sso.py)\n\n  Add SSO.\n"
+        sso = "📝 SSO (src/sso.py)\n  1. Add SSO.\n"
         self.assertAllowed(self.write(PLAN, plan_text("Planned (revised, unverified)", done=True, notes=sso)))
         self.assertDenied(self.write(PLAN, plan_text("Building", done=True, notes=sso)))
         self.assertDenied(self.write(PLAN, plan_text("Planned", done=True, notes=sso)))
@@ -187,7 +187,7 @@ class PlanModeTest(HookTest):
             with self.subTest(note):
                 self.put(PLAN, plan_text(note))
                 self.slash("plan")
-                self.assertDenied(self.edit(PLAN, f"- Status: {note}\n", "- Status: Planned\n"))
+                self.assertDenied(self.edit(PLAN, f"Status: {note}\n", "Status: Planned\n"))
         self.put(PLAN, plan_text())
         self.assertAllowed(self.edit(PLAN, "Users log in to", "People log in to"))
 
@@ -196,7 +196,7 @@ class BuildModeTest(HookTest):
     def test_unverified_plan_refused(self):
         self.put(PLAN, plan_text())
         self.slash("build")
-        self.assertDenied(self.edit(PLAN, "- Status: Planned (unverified)\n", "- Status: Building\n"))
+        self.assertDenied(self.edit(PLAN, "Status: Planned (unverified)\n", "Status: Building\n"))
         self.assertDenied(self.write("src/login.py"))
         self.assertDenied(self.bash("npm install"))
 
@@ -204,32 +204,32 @@ class BuildModeTest(HookTest):
         self.put(PLAN, plan_text("Planned"))
         self.slash("build")
         self.assertDenied(self.write("src/login.py"))  # not Building yet
-        self.assertAllowed(self.edit(PLAN, "- Status: Planned\n", "- Status: Building\n"))
+        self.assertAllowed(self.edit(PLAN, "Status: Planned\n", "Status: Building\n"))
         self.put(PLAN, plan_text("Building"))
         self.assertAllowed(self.write("src/login.py"))
         self.assertAllowed(self.bash("mkdir -p src/auth && npm test"))
-        self.assertAllowed(self.edit(PLAN, "- [ ] Users log in", "- [x] Users log in"))
-        self.assertDenied(self.edit(PLAN, "- [ ] Users log in", "- [x] Users sign up"))
+        self.assertAllowed(self.edit(PLAN, "📝 Users log in", "✅ Users log in"))
+        self.assertDenied(self.edit(PLAN, "📝 Users log in", "✅ Users sign up"))
 
     def test_build_limits(self):
         self.put(PLAN, plan_text("Building"))
         self.slash("build")
         self.assertDenied(self.write("docs/PRD.md"))
         self.assertDenied(self.edit(PLAN, "Session lasts 1 day", "Session lasts 1 year"))
-        self.assertDenied(self.edit(PLAN, "- Status: Building\n", "- Status: Verified\n"))
+        self.assertDenied(self.edit(PLAN, "Status: Building\n", "Status: Verified\n"))
         for cmd in ["git commit -m x", "git push", "git reset --hard", "git stash",
                     "git checkout main", "git checkout -b x", "git switch -c x", "git merge main", "git rebase main", "git clean -fd",
                     "gh pr create", "sudo rm x"]:
             self.assertDenied(self.bash(cmd))
 
-    def test_build_may_add_blockers_but_not_remove(self):
+    def test_build_cannot_add_or_remove_items(self):
         self.put(PLAN, plan_text("Building"))
         self.slash("build")
-        blocked = plan_text("Building", notes="\n## Blockers\n- No test key\n")
-        self.assertAllowed(self.write(PLAN, blocked))
+        blocked = plan_text("Building", notes="⛔ No test key\n  1. Ask for one.\n")
+        self.assertDenied(self.write(PLAN, blocked))
         self.put(PLAN, blocked)
-        self.assertAllowed(self.write(PLAN, blocked + "- Tests fail\n"))
         self.assertDenied(self.write(PLAN, plan_text("Building")))
+        self.assertDenied(self.edit(PLAN, "⛔ No test key", "📝 No test key"))
 
 
 class VerifyModeTest(HookTest):
@@ -256,7 +256,13 @@ class VerifyModeTest(HookTest):
             for old, new in pairs:
                 with self.subTest(f"{old} -> {new}"):
                     self.put(PLAN, plan_text(old, done=True))
-                    check(self.edit(PLAN, f"- Status: {old}\n", f"- Status: {new}\n"))
+                    check(self.edit(PLAN, f"Status: {old}\n", f"Status: {new}\n"))
+
+    def test_verify_cannot_change_item_text(self):
+        self.put(PLAN, plan_text("Built", done=True))
+        self.slash("verify", "main")
+        self.assertDenied(self.write(PLAN, plan_text("Built", done=True, notes="⛔ Tests fail\n  1. Fix them.\n")))
+        self.assertDenied(self.edit(PLAN, "✅ Users log in", "📝 Users log in with SSO"))
 
     def test_verify_cannot_commit_push_or_open_pr(self):
         self.put(PLAN, plan_text("Built", done=True))
@@ -274,7 +280,7 @@ class VibeModeTest(HookTest):
         self.assertAllowed(self.write("src/widget.py"))
         self.assertAllowed(self.bash("npm install left-pad && touch src/x"))
         self.assertDenied(self.write("docs/PRD.md"))
-        self.assertDenied(self.edit(PLAN, "- Status: Planned (unverified)\n", "- Status: Built\n"))
+        self.assertDenied(self.edit(PLAN, "Status: Planned (unverified)\n", "Status: Built\n"))
         self.assertDenied(self.bash("git commit -m x"))
 
 

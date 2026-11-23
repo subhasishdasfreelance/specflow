@@ -23,9 +23,9 @@ talk  →  /plan  →  approve  →  /build  →  /verify  →  you test  →  o
 | You | Claude |
 |---|---|
 | `How should we add reminders?` | Reads the code, asks questions, suggests an approach. Writes nothing. |
-| `/plan` | Writes `tickets/<branch>.md` for the current branch: a Goal, and todos with their change below each. Unclear points go under `## Questions`. Run it again to revise the plan. |
+| `/plan` | Writes `tickets/<branch>.md` for the current branch: a Goal, and 📝 todos with numbered changes below each. Unclear points become ❓ items. Run it again to revise the plan. |
 | *(you)* delete ` (unverified)` from Status | That's your approval. |
-| `/build` | Writes the code and tests, ticking off the todos. |
+| `/build` | Writes the code and tests, turning each 📝 into ✅. |
 | `/verify main` | Reviews the branch against `main` and the plan, runs tests, lint and build, and gives a PR link. |
 | *(you)* test it, delete ` (not human-verified)` | That's your sign-off. Commit, push, open the PR. |
 
@@ -38,8 +38,10 @@ Planned (unverified)  →  Planned  →  Building  →  Built  →  Verified (no
 - A command won't start until the previous note is gone. The check is plain Python, so it costs no tokens.
 
 **Questions and blockers**
-- `/plan` puts open questions under `## Questions`. `/build` and `/verify` put problems under `## Blockers`. Both go at the end of the plan.
-- While either exists, `/build` won't run. Talk it through, then run `/plan` to fold the answers in.
+- Only `/plan` writes plan text. Each item starts with a mark: 📝 todo, ✅ done, ❓ question, ⚠️ warning, ⛔ blocked, ❌ out of scope. ❓ and ⛔ sit next to the todo they belong to.
+- `/build` and `/verify` change only statuses. When stuck or a check fails, they explain in chat and you run `/plan`.
+- While any ❓ or ⛔ is left, `/build` won't run. Talk it through, then run `/plan` to fold the answers in.
+- Tickets in the old structure (no `Status:` line at the start of a line) are skipped.
 
 **Other commands**
 - `/verify <PR link or branch> <requirement>`: reviews any PR or branch against a requirement you paste. Touches no plan.

@@ -29,8 +29,10 @@ def branch_pattern():
 
 
 def ticket_text(branch):
+    """The branch's ticket, or None if it is missing or in the old structure."""
     path = vp.tickets_dir() / f"{branch}.md"
-    return path.read_text(encoding="utf-8") if path.is_file() else None
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    return text if vp.is_new_structure(text) else None
 
 
 def precheck(command, args):
@@ -50,8 +52,8 @@ def precheck(command, args):
             if status and "(" in status:
                 return "/build: plan not approved yet. Delete the note in brackets from Status."
             return f"/build: plan is '{status}'; it must be 'Planned'."
-        if set(vp.OPEN_SECTIONS) & set(vp.parse(text)["sections"]):
-            return "/build: answer the '## Questions' / '## Blockers' in the plan, then run /plan."
+        if vp.open_items(text):
+            return "/build: answer the ❓ / ⛔ items in the plan, then run /plan."
     if command == "verify":
         words = args.split()
         plan_mode = len(words) == 1 and "://" not in words[0] and text is not None

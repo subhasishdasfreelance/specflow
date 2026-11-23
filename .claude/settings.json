@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3 .claude/scripts/validate_plan.py:*)"
+      "Bash(python3 .claude/scripts/validate_plan.py:*)",
+      "Bash(python3 .claude/scripts/pr_link.py:*)"
     ]
   },
   "hooks": {

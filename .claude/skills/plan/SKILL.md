@@ -1,24 +1,21 @@
 ---
 name: plan
-description: Create, revise or approve a ticket (tickets/<branch>.md).
+description: Create or revise the plan for the current branch (tickets/<branch>.md).
 disable-model-invocation: true
-argument-hint: "<branch> | revise <branch> <change> | approve <branch>"
+argument-hint: "[change or answers]"
+branch-pattern: ^(feature|bug)/[A-Za-z0-9-]+$
 ---
 
-Args: `$ARGUMENTS`. Write only `tickets/<branch>.md` (a branch `feature/login` → `tickets/feature/login.md`). Never code, never the PRD.
+Args: `$ARGUMENTS`. Branch: the current git branch (a hook already checked it against `branch-pattern` above; edit that line to change the format). Write only `tickets/<branch>.md` (`feature/login` → `tickets/feature/login.md`). Never code, never the PRD.
 
-**Create** (`<branch>`):
-1. No branch given: ask "Run `/plan <branch>`" and stop.
-2. Use the analysis from this conversation. Read `docs/PRD.md`, existing tickets and `git status`. If another branch already covers this (`git grep -i <term> <branch> -- tickets`), stop and report it. If it conflicts with the PRD, say "Run `/prd <change>` first" and stop.
-3. Anything unclear (behaviour, edge cases)? Ask numbered questions and stop. Never guess.
-4. Write the ticket from [plan-template.md](plan-template.md), status `Pending`. Keep it brief, aim for under 20 lines:
-   - Plain, everyday words a newcomer understands. Short sentences, no jargon, no filler.
-   - The heading is just the branch name; the Goal says what it's for.
-   - Skimmable: one short line per bullet, one idea per line.
-   - Todo: mutually exclusive (no two items overlap), exhaustive (together they deliver the whole Goal), minimal (fewest items, nothing beyond the Goal). Each is a testable outcome (it doubles as the acceptance check) and names the files it touches.
-   - Changes (last section, numbered `1.`, `2.`): the overall technical changes. Mutually exclusive, minimal and exhaustive, like the todos. Detailed enough for a developer to act on, but brief.
-5. Validate, reply in a few lines, end with "Run `/plan approve <branch>`."
-
-**revise `<branch> <change>`:** ask if the change is unclear. Update the ticket, keeping unaffected ticks; status goes back to `Pending`. Validate, summarize in 2-3 lines.
-
-**approve `<branch>`:** status only: `Pending` → `Planned`. Validate. Reply "Approved. Run `/build <branch>`."
+1. Use the analysis from this conversation and the args. Read `docs/PRD.md` (if any) and the ticket (if any). If another branch already covers this (`git grep -i <term> <branch> -- tickets`), stop and report it. If it conflicts with the PRD, say "Run `/prd <change>` first" and stop.
+2. **No ticket:** write it from [plan-template.md](plan-template.md), status `Planned (unverified)`.
+   **Ticket exists:** revise it. Keep unaffected ticks, work the answers into the Goal and todos, remove the answered items (and empty sections) from `## Questions` / `## Blockers`. Status `Planned (revised, unverified)`.
+3. Anything unclear about the requirement or the technical approach? Add it as a numbered item under `## Questions` at the end. Never guess.
+4. Keep it brief and skimmable:
+   - Plain, everyday words. Short sentences, no jargon, no filler.
+   - The heading is just the branch name; the Goal is one sentence.
+   - Todos: no overlap, together they deliver the whole Goal, nothing beyond it. Each is a testable outcome and names its files.
+   - Each todo is its own block, as in the template: a `---` line before and after it, the outcome in bold, then its changes as short indented bullets (file, function or field, what changes), clear to a junior developer.
+   - Easy reading beats everything else.
+5. Validate. Reply in 2-3 lines, then: "Review it, delete the note in brackets from Status to approve, then run `/build`."

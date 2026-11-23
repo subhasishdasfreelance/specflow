@@ -12,7 +12,7 @@ REPO = Path(__file__).resolve().parents[2]
 SID = "test-session-1"
 
 
-def plan_text(status="Pending", done=False, notes=""):
+def plan_text(status="Planned (unverified)", done=False, notes=""):
     box = "x" if done else " "
     return f"""# feature/login
 
@@ -23,19 +23,21 @@ Users log in to see their data.
 
 ## Todo
 - [{box}] Users log in with email and password (src/login.py)
+
+  Add an email/password check in `src/login.py`.
+
 - [{box}] Session lasts 1 day (src/session.py)
-{notes}
-## Changes
-1. Add an email/password check in `src/login.py`
-2. Store sessions with a 1-day expiry in `src/session.py`
-"""
+
+  Store sessions with a 1-day expiry in `src/session.py`.
+{notes}"""
 
 
 class HookTest(unittest.TestCase):
     def setUp(self):
         self.root = Path(os.path.realpath(tempfile.mkdtemp(prefix="wf-")))
-        for sub in ("hooks", "scripts"):
+        for sub in ("hooks", "scripts", "skills"):
             shutil.copytree(REPO / ".claude" / sub, self.root / ".claude" / sub)
+        subprocess.run(["git", "init", "-q", "-b", "feature/login"], cwd=self.root, check=True)
         (self.root / "tickets").mkdir()
         (self.root / "docs").mkdir()
         (self.root / "src").mkdir()
@@ -55,7 +57,7 @@ class HookTest(unittest.TestCase):
                                         "prompt": text, "cwd": str(self.root)})
 
     def expand(self, name, args="", sid=SID):
-        self.run_hook("prompt_expansion", {
+        return self.run_hook("prompt_expansion", {
             "session_id": sid, "hook_event_name": "UserPromptExpansion",
             "expansion_type": "slash_command", "command_name": name,
             "command_args": args, "prompt": f"/{name} {args}".strip()})

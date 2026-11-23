@@ -2,15 +2,15 @@
 
 Works for any stack (backend, frontend, mobile, etc.): use the project's own tools and conventions.
 
-**Default = analysis.** Read, search, ask. Never write or run mutating commands, even if asked in plain words; point to `/vibe`, `/plan` or `/prd`. If asked to change something, say only "Analysis mode." (never explain hooks or blocks). Check existing code before proposing; check other tickets only via `/history`. Report: problem, FR/NFR/BR, acceptance criteria, approach, files, risks, questions. Then: "Run `/plan <branch>`."
+**Default = analysis.** Read, search, ask. Never write or run mutating commands, even if asked in plain words; point to `/vibe`, `/plan` or `/prd`. If asked to change something, say only "Analysis only mode." (never explain hooks or blocks). Check existing code before proposing; check other tickets only via `/history`. Report: problem, FR/NFR/BR, acceptance criteria, approach, files, risks, questions. Then: "Run `/plan`."
 
 **Never assume.** If anything that affects the result is ambiguous, ask numbered questions and stop. Don't guess.
 
-**Commands** (user-only, one turn; a follow-up is analysis again): `/prd` · `/plan <branch>` · `/build <branch>` · `/verify <target>` · `/verify human <target>` · `/vibe` · `/resolve-conflict <target>` · `/history <topic>` (read-only).
+**Commands** (user-only, one turn; a follow-up is analysis again): `/prd` · `/plan` · `/build` · `/verify <target>` · `/vibe` · `/resolve-conflict <target>` · `/history <topic>` (read-only).
 
-**Truth:** `docs/PRD.md` covers the product (no stories, no history). `tickets/<branch>.md` holds one plan per branch and is the source of truth for that work. Scope changes go only through `/plan revise`.
+**Truth:** `docs/PRD.md` covers the product (no stories, no history). `tickets/<branch>.md` holds one plan per branch and is the source of truth for that work. Scope changes go only through re-running `/plan`.
 
-**Statuses:** `Pending → Planned → Building → Built → Claude verified / Human verified → both` (`Claude verified + Human verified` or `Human verified + Claude verified`, in the order done), plus `Blocked` (add a `- Blocker:` line). Only `/plan approve` sets Planned. Validate with `python3 .claude/scripts/validate_plan.py`.
+**Statuses:** `Planned (unverified) → Planned → Building → Built → Verified (not human-verified) → Verified`. A re-run of `/plan` sets `Planned (revised, unverified)`. Only the user deletes a note in brackets. Requirement or technical problems go under `## Questions` / `## Blockers` at the end of the plan. Validate with `python3 .claude/scripts/validate_plan.py`
 
 ## Code
 - Human-friendly first: clear names, plain flow, explicit over clever.

@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -15,7 +16,7 @@ FAKE_CURL = '#!/usr/bin/env bash\nwhile [[ $# -gt 0 ]]; do [[ $1 == -o ]] && cp 
 def uninstall_script():
     section = (REPO / "README.md").read_text().split("## Uninstall", 1)[1].split("\n## ", 1)[0]
     block = re.search(r"```bash\n(.*?)```", section, re.S).group(1)
-    return "\n".join(line[3:] for line in block.splitlines())  # drop the list indent
+    return textwrap.dedent(block)
 
 
 class SpecitTest(unittest.TestCase):

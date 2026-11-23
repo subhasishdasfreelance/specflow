@@ -1,22 +1,65 @@
 # feature/specit-append-guidelines
 
-- Status: Human verified + Claude verified
+- Status: Verified
 
 ## Goal
-People who install specit keep their own files, and can cleanly remove what specit added.
+People using specit follow a simpler workflow: they approve by deleting a note in brackets, read plans easily, and spend fewer tokens because checks run without AI.
 
 ## Todo
-- [x] Installer downloads only `.claude/`, `README.md` and `guidelines.md`; saves the README as `README-specit.md`; leaves no `guidelines.md`; `~/.local/bin/specit` is unchanged. (specit)
-- [x] Guidelines go at the end of `CLAUDE.md`, and ignore lines at the end of `.gitignore`, each between `specit:start`/`specit:end` markers; files are created if missing; existing text is kept; a re-run replaces the block. (specit)
-- [x] Before "Proceed?", the installer lists every change; any answer but `y` changes nothing. (specit)
-- [x] `README-specit.md` is renamed to `README.md`; Setup explains `specit` and what it adds; no `tests/workflow/` step. (README-specit.md, README.md)
-- [x] Uninstall lists what was added and gives a copy-paste script without `rm -rf`; install then uninstall leaves the user's files as before. (README.md)
-- [x] Tests run the installer and the README's uninstall script on a sample project. (tests/workflow/test_specit.py)
 
-## Changes
-1. Add `specit` at the repo root: a copy of `~/.local/bin/specit` that extracts `*/.claude`, `*/README.md`, `*/guidelines.md` into a `mktemp -d` folder.
-2. In `specit`, copy `.claude/` into the project and `README.md` to `README-specit.md`.
-3. In `specit`, an `add_block` function strips any old `start`..`end` block with `awk`, then appends the new one: guidelines to `CLAUDE.md` (`<!-- specit:start/end -->`), `.claude/runtime/` and `.claude/settings.local.json` to `.gitignore` (`# specit:start/end`).
-4. In `specit`, the preview prints `new`/`overwrite` per file and `new`/`append`/`update` for `CLAUDE.md` and `.gitignore`.
-5. `git mv README-specit.md README.md`; rewrite Setup (install steps + "what specit adds" table), Uninstall (removal list + bash block using `rm -f`, `rmdir`, `awk`) and Files.
-6. Add `tests/workflow/test_specit.py`: build a tarball from tracked files, fake `curl` on `PATH`, run `specit` and the README's uninstall block, compare file snapshots.
+---
+
+- [x] **Plans accept only the new statuses, need changes under each todo, and may end with `## Questions` / `## Blockers`** (.claude/scripts/validate_plan.py, tests/workflow/test_validate_plan.py, tests/workflow/helpers.py)
+  - `STATUSES`: `Planned (unverified)`, `Planned (revised, unverified)`, `Planned`, `Building`, `Built`, `Verified (not human-verified)`, `Verified`.
+  - Drop `Blocker` and the required `## Changes`.
+  - Error "todo has no change" when no indented line follows a todo.
+
+---
+
+- [x] **Claude can't remove a note in brackets or skip a stage** (.claude/hooks/workflow_policy.py, tests/workflow/test_hooks.py)
+  - `/plan`: new ticket → `Planned (unverified)`; existing → `Planned (revised, unverified)`.
+  - `/build`: `Planned` → `Building` → `Built`. `/verify`: `Built` → `Verified (not human-verified)`.
+  - `/build` and `/verify` may only add to `## Blockers`. The `approve` logic is gone.
+
+---
+
+- [x] **A wrong branch or status refuses `/plan`, `/build` or `/verify` with a one-line reason before Claude runs** (.claude/hooks/workflow_precheck.py, .claude/hooks/workflow_prompt_expansion.py, tests/workflow/test_precheck.py)
+  - `precheck(command, args)` returns a reason or `None`.
+  - Reads the branch (`git branch --show-current`), `branch-pattern:` from `plan/SKILL.md`, and the ticket.
+  - `/build` is also refused while `## Questions` / `## Blockers` exist.
+  - The expansion hook prints `{"decision": "block", "reason": ...}`.
+
+---
+
+- [x] **`python3 .claude/scripts/pr_link.py <target>` prints the PR link, and `/verify` can run it** (.claude/scripts/pr_link.py, .claude/hooks/workflow_bash.py, .claude/settings.json, tests/workflow/test_pr_link.py)
+  - Owner and repo come from `git remote get-url origin` (ssh, ssh host alias or https).
+  - Body is the ticket's Goal, encoded with `urllib.parse.quote`.
+
+---
+
+- [x] **`/plan` uses the current branch, creates or revises the one plan, and writes unknowns under `## Questions`** (.claude/skills/plan/SKILL.md)
+  - Frontmatter `branch-pattern: ^(feature|bug)/[A-Za-z0-9-]+$`.
+  - No `approve` or `revise`. On revise, keep unaffected ticks and remove answered questions and blockers.
+
+---
+
+- [x] **Plans are easy to read: each todo is its own block with its changes as bullets** (.claude/skills/plan/plan-template.md, .claude/skills/plan/SKILL.md, tests/workflow/test_validate_plan.py)
+  - `---` before and after each todo; bold outcome; indented change bullets.
+
+---
+
+- [x] **`/build` adds problems under `## Blockers`; `/verify` has no `human` mode, gives the PR link, and can review a PR or branch against a pasted requirement** (.claude/skills/build/SKILL.md, .claude/skills/verify/SKILL.md)
+  - Remove `Blocked` and the checks the precheck now does.
+  - PR review mode never touches a ticket.
+
+---
+
+- [x] **The installer and the uninstall script include the new files** (README.md, tests/workflow/test_specit.py)
+  - `pr_link.py` and `workflow_precheck.py` are in the uninstall `rm -f` list.
+
+---
+
+- [x] **The README is short and plain and describes the new workflow** (README.md)
+  - Covers the lifecycle, notes in brackets, `## Questions` / `## Blockers`, PR review and `branch-pattern`.
+
+---

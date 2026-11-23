@@ -1,19 +1,16 @@
-# <BRANCH_NAME>
+<BRANCH_NAME>
+Status: Planned (unverified)
 
-- Status: Planned (unverified)
-
-## Goal
+Goal:
 <One plain sentence: who needs what, and why.>
 
-## Todo
+Todo:
+📝 <one plain, testable outcome> (<files>)
 
----
+  1. <file and function or field: what changes, e.g. "db/schema.sql: add a sessions table with user_id and expires_at.">
+  2. <next change, if any>
 
-- [ ] **<one plain, testable outcome>** (<files>)
-  - <one technical change, e.g. "Add a `sessions` table with `user_id` and `expires_at`.">
-  - <next change, if any>
 
----
+❓ <only if something is unclear; otherwise leave it out>
 
-## Questions
-1. <only if something is unclear; otherwise leave this section out>
+  1. <an option or detail>

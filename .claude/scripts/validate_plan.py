@@ -2,7 +2,11 @@
 """Validate tickets in tickets/ (one plan per branch). Read-only.
 
 Usage: python3 .claude/scripts/validate_plan.py [ticket.md ...]
-No arguments = validate every tickets/**/*.md. Exit 1 on any error.
+No arguments = validate every tickets/**/*.md in the new structure. Exit 1 on any error.
+
+New structure: a "Status:" line, "Goal:" and "Todo:" headings, and one line per item
+starting with a mark, each with numbered changes indented below it.
+Old-structure tickets (no line starting with "Status:") are skipped.
 """
 import re
 import sys
@@ -15,62 +19,69 @@ CLAUDE_VERIFIED = "Verified (not human-verified)"
 STATUSES = [UNVERIFIED, REVISED, "Planned", "Building", "Built", CLAUDE_VERIFIED, "Verified"]
 DONE = {"Built", CLAUDE_VERIFIED, "Verified"}
 SECTIONS = ["Goal", "Todo"]
-OPEN_SECTIONS = ["Questions", "Blockers"]  # while either exists, /build is refused
-PLAN_FIELDS = ["Status"]
+TODO, TICKED = "📝", "✅"
+OPEN_MARKS = {"❓", "⛔"}  # while any is left, /build is refused
 
-FIELD_RE = re.compile(r"^\s*-\s*([A-Za-z ]+):\s*(.*?)\s*$")
-TODO_RE = re.compile(r"^\s*-\s*\[([ xX])\]\s*(\S.*?)\s*$")
-CHANGE_RE = re.compile(r"^\s+\S")  # an indented line below a todo
+STATUS_RE = re.compile(r"^Status:\s*(.*?)\s*$", re.M)
+SECTION_RE = re.compile(r"^(Goal|Todo):\s*$")
+ITEM_RE = re.compile(r"^(📝|✅|❓|⚠️?|⛔|❌)\s*(.*?)\s*$")
+CHANGE_RE = re.compile(r"^\s+\d+\.\s+\S")  # an indented, numbered line below an item
+
+
+def is_new_structure(text):
+    return bool(STATUS_RE.search(text))
 
 
 def parse(text):
-    """Return {'fields', 'sections', 'todos'} for a plan. todos = list of (done, text, has_change)."""
-    plan = {"fields": {}, "sections": [], "todos": []}
+    """Return {'status', 'sections', 'items'}. items = list of [mark, text, has_change]."""
+    match = STATUS_RE.search(text)
+    plan = {"status": match.group(1) if match else None, "sections": [], "items": []}
     section = None
     for line in text.splitlines():
-        if line.startswith("## "):
-            section = line[3:].strip()
+        if SECTION_RE.match(line):
+            section = SECTION_RE.match(line).group(1)
             plan["sections"].append(section)
-            continue
-        f = FIELD_RE.match(line)
-        if section is None and f:
-            plan["fields"].setdefault(f.group(1).strip(), f.group(2))
-        elif section == "Todo" and TODO_RE.match(line):
-            done, todo = TODO_RE.match(line).groups()
-            plan["todos"].append((done != " ", todo.lower(), False))
-        elif section == "Todo" and plan["todos"] and CHANGE_RE.match(line):
-            done, todo, _ = plan["todos"][-1]
-            plan["todos"][-1] = (done, todo, True)
+        elif section == "Todo" and ITEM_RE.match(line):
+            mark, item = ITEM_RE.match(line).groups()
+            plan["items"].append([mark.rstrip("\ufe0f"), item, False])
+        elif section == "Todo" and plan["items"] and CHANGE_RE.match(line):
+            plan["items"][-1][2] = True
     return plan
 
 
 def plan_status(text):
-    return parse(text)["fields"].get("Status")
+    return parse(text)["status"]
+
+
+def open_items(text):
+    """The ❓ and ⛔ items, as 'mark text' lines."""
+    return [f"{mark} {item}" for mark, item, _ in parse(text)["items"] if mark in OPEN_MARKS]
 
 
 def validate(text):
     """Return a list of error strings (empty = valid)."""
     errors = []
     plan = parse(text)
-    for name in PLAN_FIELDS:
-        if not plan["fields"].get(name):
-            errors.append(f"missing plan field '- {name}:'")
-    status = plan["fields"].get("Status")
-    if status and status not in STATUSES:
+    status = plan["status"]
+    if not status:
+        errors.append("missing 'Status:' line")
+    elif status not in STATUSES:
         errors.append(f"invalid plan status '{status}'")
     for name in SECTIONS:
         if name not in plan["sections"]:
-            errors.append(f"missing section '## {name}'")
-    todos = [todo for _, todo, _ in plan["todos"]]
-    if not todos:
-        errors.append("no todos ('- [ ] step') in '## Todo'")
-    if len(set(todos)) < len(todos):
-        errors.append("duplicate todos in '## Todo' (todos must not overlap)")
-    for _, todo, has_change in plan["todos"]:
+            errors.append(f"missing heading '{name}:'")
+    items = [item.lower() for _, item, _ in plan["items"]]
+    if not any(mark in (TODO, TICKED) for mark, _, _ in plan["items"]):
+        errors.append(f"no {TODO} or {TICKED} item under 'Todo:'")
+    if len(set(items)) < len(items):
+        errors.append("duplicate items under 'Todo:' (items must not overlap)")
+    for mark, item, has_change in plan["items"]:
         if not has_change:
-            errors.append(f"todo has no change (indented line below it): '{todo}'")
-    if status in DONE and not all(done for done, _, _ in plan["todos"]):
-        errors.append(f"plan is {status} but some todos are unchecked")
+            errors.append(f"item has no numbered change below it: '{mark} {item}'")
+        if "`" in item:
+            errors.append(f"item uses backticks (plain words only): '{mark} {item}'")
+    if status in DONE and any(mark == TODO for mark, _, _ in plan["items"]):
+        errors.append(f"plan is {status} but a {TODO} todo remains")
     return errors
 
 
@@ -79,7 +90,8 @@ def tickets_dir():
 
 
 def ticket_files():
-    return sorted(p for p in tickets_dir().rglob("*.md") if not p.name.startswith("_"))
+    return sorted(p for p in tickets_dir().rglob("*.md")
+                  if not p.name.startswith("_") and is_new_structure(p.read_text(encoding="utf-8")))
 
 
 def main(argv):

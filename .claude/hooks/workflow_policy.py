@@ -19,8 +19,7 @@ RULES = {
     "build": {("Planned", "Building"), ("Building", "Built")},
     "verify": {("Built", vp.CLAUDE_VERIFIED)},
 }
-FREE_LINE = re.compile(r"^\s*-\s*Status:")
-TICKED = re.compile(r"^(\s*-\s*)\[[xX]\]")
+FREE_LINE = re.compile(r"^Status:")
 READ_ONLY_MSG = ("{mode} mode: application files are read-only. "
                  "Use /vibe for ad-hoc changes, or /plan then /build.")
 
@@ -131,24 +130,14 @@ def simulate(tool, ti, old):
     return text
 
 
-def split_blockers(text):
-    """(plan text without the '## Blockers' section, that section's lines)."""
-    rest, blockers, inside = [], [], False
-    for line in text.splitlines():
-        if line.startswith("## "):
-            inside = line.strip() == "## Blockers"
-        (blockers if inside else rest).append(line.rstrip())
-    while blockers and not blockers[-1]:
-        blockers.pop()
-    return "\n".join(rest), blockers
-
-
 def normalize(text):
-    """Plan text minus the parts status updates may change (Status line, ticks)."""
+    """Plan text minus the parts status updates may change (Status line, 📝 -> ✅ marks)."""
     out = []
     for line in text.splitlines():
+        if line.startswith(vp.TICKED):
+            line = vp.TODO + line[len(vp.TICKED):]
         if not FREE_LINE.match(line):
-            out.append(TICKED.sub(r"\1[ ]", line.rstrip()))
+            out.append(line.rstrip())
     return "\n".join(out).strip()
 
 
@@ -180,10 +169,8 @@ def plan_decision(mode, args, tool, ti, path):
         return plan_status_error(a, b, not old)
     if not old:
         return "Only /plan can create a plan."
-    old_rest, old_blockers = split_blockers(old)
-    new_rest, new_blockers = split_blockers(new)
-    if normalize(old_rest) != normalize(new_rest) or new_blockers[:len(old_blockers)] != old_blockers:
-        return f"/{mode} may only change the Status line, todo ticks and add to '## Blockers'."
+    if normalize(old) != normalize(new):
+        return f"/{mode} may only change the Status line and 📝 -> ✅ marks."
     if a != b and (a, b) not in RULES[mode]:
         return f"/{mode}: status {a} -> {b} is not allowed."
     return None

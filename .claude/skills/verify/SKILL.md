@@ -5,7 +5,7 @@ disable-model-invocation: true
 argument-hint: "<target-branch | PR link> [pasted requirement]"
 ---
 
-Args: `$ARGUMENTS`. Read-only: never change code or git state (no commits, no pushes). You may edit only the ticket's `Status` line and its `## Blockers` section.
+Args: `$ARGUMENTS`. Read-only: never change code or git state (no commits, no pushes). You may edit only the ticket's `Status` line.
 
 1. No target given: show `git branch -a` and the current branch, ask "Run `/verify <target>`", and stop.
 2. Pick the mode:
@@ -18,5 +18,5 @@ Args: `$ARGUMENTS`. Read-only: never change code or git state (no commits, no pu
    - checks run and their results
    - findings as `[Severity] file:line: issue → fix`
    - verdict: Ready / Ready with notes / Changes required / Unable to verify
-6. **Plan mode:** all pass → status `Verified (not human-verified)`, validate. Otherwise add the failures under `## Blockers` at the end (status unchanged), say "Answer them, then run `/plan`", and stop.
+6. **Plan mode:** all pass → status `Verified (not human-verified)`, validate. Otherwise leave the plan as is, say "Run `/plan`", and stop.
 7. All pass and the target is a branch: run `python3 .claude/scripts/pr_link.py <t>` and show the link. Remind the user to commit and push first and, in plan mode, to test it and then delete ` (not human-verified)` from Status.

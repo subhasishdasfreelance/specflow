@@ -8,21 +8,24 @@ import re
 import sys
 from pathlib import Path
 
-VERIFIED = ["Claude verified", "Human verified", "Claude verified + Human verified",
-            "Human verified + Claude verified"]
-STATUSES = ["Pending", "Planned", "Building", "Built", *VERIFIED, "Blocked"]
-DONE = {"Built", *VERIFIED}
-SECTIONS = ["Goal", "Todo", "Changes"]
+# A note in brackets means "waiting for the user"; only the user deletes it.
+UNVERIFIED = "Planned (unverified)"
+REVISED = "Planned (revised, unverified)"
+CLAUDE_VERIFIED = "Verified (not human-verified)"
+STATUSES = [UNVERIFIED, REVISED, "Planned", "Building", "Built", CLAUDE_VERIFIED, "Verified"]
+DONE = {"Built", CLAUDE_VERIFIED, "Verified"}
+SECTIONS = ["Goal", "Todo"]
+OPEN_SECTIONS = ["Questions", "Blockers"]  # while either exists, /build is refused
 PLAN_FIELDS = ["Status"]
 
 FIELD_RE = re.compile(r"^\s*-\s*([A-Za-z ]+):\s*(.*?)\s*$")
 TODO_RE = re.compile(r"^\s*-\s*\[([ xX])\]\s*(\S.*?)\s*$")
-CHANGE_RE = re.compile(r"^\s*\d+\.\s+(\S.*?)\s*$")
+CHANGE_RE = re.compile(r"^\s+\S")  # an indented line below a todo
 
 
 def parse(text):
-    """Return {'fields', 'sections', 'changes', 'todos'} for a plan. todos = list of (done, text)."""
-    plan = {"fields": {}, "sections": [], "changes": [], "todos": []}
+    """Return {'fields', 'sections', 'todos'} for a plan. todos = list of (done, text, has_change)."""
+    plan = {"fields": {}, "sections": [], "todos": []}
     section = None
     for line in text.splitlines():
         if line.startswith("## "):
@@ -32,11 +35,12 @@ def parse(text):
         f = FIELD_RE.match(line)
         if section is None and f:
             plan["fields"].setdefault(f.group(1).strip(), f.group(2))
-        elif section == "Changes" and CHANGE_RE.match(line):
-            plan["changes"].append(CHANGE_RE.match(line).group(1).lower())
         elif section == "Todo" and TODO_RE.match(line):
             done, todo = TODO_RE.match(line).groups()
-            plan["todos"].append((done != " ", todo.lower()))
+            plan["todos"].append((done != " ", todo.lower(), False))
+        elif section == "Todo" and plan["todos"] and CHANGE_RE.match(line):
+            done, todo, _ = plan["todos"][-1]
+            plan["todos"][-1] = (done, todo, True)
     return plan
 
 
@@ -57,19 +61,15 @@ def validate(text):
     for name in SECTIONS:
         if name not in plan["sections"]:
             errors.append(f"missing section '## {name}'")
-    if "Changes" in plan["sections"]:
-        if plan["sections"][-1] != "Changes":
-            errors.append("'## Changes' must be the last section")
-        if not plan["changes"]:
-            errors.append("no changes ('1. change') in '## Changes'")
-        if len(set(plan["changes"])) < len(plan["changes"]):
-            errors.append("duplicate changes in '## Changes' (changes must not overlap)")
-    todos = [todo for _, todo in plan["todos"]]
+    todos = [todo for _, todo, _ in plan["todos"]]
     if not todos:
         errors.append("no todos ('- [ ] step') in '## Todo'")
     if len(set(todos)) < len(todos):
         errors.append("duplicate todos in '## Todo' (todos must not overlap)")
-    if status in DONE and not all(done for done, _ in plan["todos"]):
+    for _, todo, has_change in plan["todos"]:
+        if not has_change:
+            errors.append(f"todo has no change (indented line below it): '{todo}'")
+    if status in DONE and not all(done for done, _, _ in plan["todos"]):
         errors.append(f"plan is {status} but some todos are unchecked")
     return errors
 

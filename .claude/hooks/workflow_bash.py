@@ -82,9 +82,12 @@ def strip_wrappers(words):
     return words
 
 
-def is_validator(words):
+READ_ONLY_SCRIPTS = (".claude/scripts/validate_plan.py", ".claude/scripts/pr_link.py")
+
+
+def is_read_only_script(words):
     return (len(words) >= 2 and os.path.basename(words[0]) in ("python", "python3")
-            and words[1].replace("\\", "/").endswith(".claude/scripts/validate_plan.py"))
+            and words[1].replace("\\", "/").endswith(READ_ONLY_SCRIPTS))
 
 
 def git_kind(words):
@@ -154,7 +157,7 @@ def is_read_only(words):
         return git_kind(words) == "read"
     if cmd == "gh":
         return gh_kind(words) == "read"
-    return cmd in READ_ONLY or is_validator(words)
+    return cmd in READ_ONLY or is_read_only_script(words)
 
 
 def is_check_command(words):
@@ -225,7 +228,7 @@ def segment_error(mode, args, words, cwd, depth):
     if not words:
         return None
     cmd = os.path.basename(words[0])
-    if is_validator(words):
+    if is_read_only_script(words):
         return None
     if cmd in NEVER:
         return f"'{cmd}' is never allowed by the workflow."

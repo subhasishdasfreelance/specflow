@@ -26,24 +26,27 @@ class ValidatePlanTest(unittest.TestCase):
         self.assertIn("no todos ('- [ ] step') in '## Todo'", vp.validate(text))
 
     def test_missing_section_and_status(self):
-        text = plan_text().replace("## Goal\n", "").replace("- Status: Pending\n", "")
+        text = plan_text().replace("## Goal\n", "").replace("- Status: Planned (unverified)\n", "")
         errors = vp.validate(text)
         self.assertIn("missing section '## Goal'", errors)
         self.assertIn("missing plan field '- Status:'", errors)
 
-    def test_needs_changes(self):
-        no_section = plan_text().split("## Changes")[0]
-        self.assertIn("missing section '## Changes'", vp.validate(no_section))
-        bullets = no_section + "## Changes\n- Add login\n"
-        self.assertIn("no changes ('1. change') in '## Changes'", vp.validate(bullets))
+    def test_each_todo_needs_a_change(self):
+        text = plan_text(notes="\n- [ ] Logout works (src/logout.py)\n")
+        self.assertIn("todo has no change (indented line below it): 'logout works (src/logout.py)'",
+                      vp.validate(text))
 
-    def test_changes_last_and_unique(self):
-        self.assertIn("'## Changes' must be the last section", vp.validate(plan_text() + "## Notes\n"))
-        dup = plan_text() + "3. Add an email/password check in `src/login.py`\n"
-        self.assertIn("duplicate changes in '## Changes' (changes must not overlap)", vp.validate(dup))
+    def test_template_block_format(self):
+        todos = ("## Todo\n\n---\n\n- [ ] **Users log in** (src/login.py)\n  - Add a check.\n  - Add a form.\n\n---\n\n"
+                 "- [ ] **Session lasts 1 day** (src/session.py)\n  - Store expiry.\n\n---\n")
+        self.assertEqual(vp.validate(plan_text().split("## Todo")[0] + todos), [])
+
+    def test_questions_and_blockers_allowed_at_end(self):
+        text = plan_text(notes="\n## Questions\n1. SSO too?\n\n## Blockers\n- No test key\n")
+        self.assertEqual(vp.validate(text), [])
 
     def test_duplicate_todos(self):
-        text = plan_text(notes="- [ ] Session lasts 1 day (src/session.py)\n")
+        text = plan_text(notes="- [ ] Session lasts 1 day (src/session.py)\n\n  Again.\n")
         self.assertIn("duplicate todos in '## Todo' (todos must not overlap)", vp.validate(text))
 
     def test_built_plan_needs_all_todos_ticked(self):

@@ -13,21 +13,16 @@ from workflow_state import project_root
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import validate_plan as vp  # noqa: E402
 
-# Allowed (from, to) status changes per mode. "*" = any previous value.
+# Allowed (from, to) status changes for /build and /verify. /plan is handled in plan_status_error.
+# Only the user removes a note in brackets, so no rule ever removes one.
 RULES = {
-    "plan": {("*", "Pending"), ("*", "Blocked")},
-    "build": {("Planned", "Building"), ("Building", "Built"), ("Blocked", "Building"),
-              ("Planned", "Blocked"), ("Building", "Blocked")},
-    # /verify adds "Claude verified"; /verify human adds "Human verified". Both, in the order done.
-    "verify": {("Built", "Claude verified"), ("Built", "Human verified"),
-               ("Claude verified", "Claude verified + Human verified"),
-               ("Human verified", "Human verified + Claude verified"),
-               ("Built", "Blocked"), ("Claude verified", "Blocked"), ("Human verified", "Blocked")},
+    "build": {("Planned", "Building"), ("Building", "Built")},
+    "verify": {("Built", vp.CLAUDE_VERIFIED)},
 }
-FREE_LINE = re.compile(r"^\s*-\s*(Status|Updated|Blocker):")
+FREE_LINE = re.compile(r"^\s*-\s*Status:")
 TICKED = re.compile(r"^(\s*-\s*)\[[xX]\]")
 READ_ONLY_MSG = ("{mode} mode: application files are read-only. "
-                 "Use /vibe for ad-hoc changes, or approve a plan (/plan approve) and run /build.")
+                 "Use /vibe for ad-hoc changes, or /plan then /build.")
 
 
 def resolve(path, cwd):
@@ -95,7 +90,7 @@ def source_write(mode):
         return None
     if mode == "build":
         return None if active_build() else (
-            "/build: no plan is 'Building'. Set an approved (Planned) plan to Building first.")
+            "/build: no plan is 'Building'. Set a Planned plan to Building first.")
     return READ_ONLY_MSG.format(mode=mode)
 
 
@@ -136,8 +131,20 @@ def simulate(tool, ti, old):
     return text
 
 
+def split_blockers(text):
+    """(plan text without the '## Blockers' section, that section's lines)."""
+    rest, blockers, inside = [], [], False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            inside = line.strip() == "## Blockers"
+        (blockers if inside else rest).append(line.rstrip())
+    while blockers and not blockers[-1]:
+        blockers.pop()
+    return "\n".join(rest), blockers
+
+
 def normalize(text):
-    """Plan text minus the parts status updates may change (Status/Blocker lines, ticks)."""
+    """Plan text minus the parts status updates may change (Status line, ticks)."""
     out = []
     for line in text.splitlines():
         if not FREE_LINE.match(line):
@@ -145,26 +152,20 @@ def normalize(text):
     return "\n".join(out).strip()
 
 
-def _allowed(mode, old, new, approve):
-    if new not in vp.STATUSES:
-        return False
-    if approve and old in (None, "Pending") and new == "Planned":
-        return True
-    rules = RULES.get(mode, set())
-    return (old, new) in rules or ("*", new) in rules
-
-
-def transition_error(mode, approve, old_text, new_text):
-    a = vp.parse(old_text)["fields"].get("Status")
-    b = vp.parse(new_text)["fields"].get("Status")
-    if a != b and not _allowed(mode, a, b, approve):
-        hint = " Approval needs '/plan approve'." if b == "Planned" else ""
-        return f"/{mode}: status {a or 'new'} -> {b} is not allowed.{hint}"
-    return None
+def plan_status_error(old_status, new_status, is_new):
+    """/plan: a new plan starts unverified; changing an existing one marks it revised."""
+    if is_new:
+        ok = new_status == vp.UNVERIFIED
+    else:
+        ok = new_status == vp.REVISED or new_status == old_status == vp.UNVERIFIED
+    if ok:
+        return None
+    want = vp.UNVERIFIED if is_new else vp.REVISED
+    return f"/plan: status must be '{want}', not '{new_status}'."
 
 
 def plan_decision(mode, args, tool, ti, path):
-    if mode not in RULES:
+    if mode not in ("plan", *RULES):
         return "Tickets change only through /plan (statuses via /build, /verify)."
     try:
         old = Path(path).read_text(encoding="utf-8")
@@ -173,11 +174,16 @@ def plan_decision(mode, args, tool, ti, path):
     new = simulate(tool, ti, old)
     if new is None:
         return "Plans must be changed with Write or Edit."
-    approve = mode == "plan" and args.split()[:1] == ["approve"]
-    if mode != "plan" or approve:
-        if not old:
-            return "Only /plan can create a plan."
-        if normalize(old) != normalize(new):
-            what = "/plan approve" if approve else f"/{mode}"
-            return (f"{what} may only change Status/Blocker lines and todo ticks of a plan.")
-    return transition_error(mode, approve, old, new)
+    a = vp.plan_status(old)
+    b = vp.plan_status(new)
+    if mode == "plan":
+        return plan_status_error(a, b, not old)
+    if not old:
+        return "Only /plan can create a plan."
+    old_rest, old_blockers = split_blockers(old)
+    new_rest, new_blockers = split_blockers(new)
+    if normalize(old_rest) != normalize(new_rest) or new_blockers[:len(old_blockers)] != old_blockers:
+        return f"/{mode} may only change the Status line, todo ticks and add to '## Blockers'."
+    if a != b and (a, b) not in RULES[mode]:
+        return f"/{mode}: status {a} -> {b} is not allowed."
+    return None

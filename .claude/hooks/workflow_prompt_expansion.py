@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 """UserPromptExpansion: a user-typed workflow command (see COMMANDS)
-authorizes its mode for this turn only. Nothing else can grant a mode."""
+authorizes its mode for this turn only. Nothing else can grant a mode.
+A failed precheck blocks the command before Claude sees it."""
+import json
+
+from workflow_precheck import precheck
 from workflow_state import COMMANDS, read_input, save
 
 data = read_input()
 name = str(data.get("command_name") or "").lstrip("/")
 if data.get("expansion_type", "slash_command") == "slash_command" and name in COMMANDS:
-    save(data.get("session_id"), COMMANDS[name], data.get("command_args") or "", data.get("prompt") or "")
+    args = data.get("command_args") or ""
+    reason = precheck(name, args)
+    if reason:
+        print(json.dumps({"decision": "block", "reason": reason}))
+    else:
+        save(data.get("session_id"), COMMANDS[name], args, data.get("prompt") or "")

@@ -1,22 +1,22 @@
 ---
 name: verify
-description: Claude reviews the current branch against its ticket and a target branch, or records that a human tested it.
+description: Review the current branch against its plan, or a PR or branch against a pasted requirement, and give a PR link.
 disable-model-invocation: true
-argument-hint: "<target-branch> | human <target-branch>"
+argument-hint: "<target-branch | PR link> [pasted requirement]"
 ---
 
-Args: `$ARGUMENTS`. Ticket: `tickets/<current-branch>.md`. Read-only: never change code or git state (no commits, no pushes). You may edit only the ticket's `Status`/`Blocker` lines.
+Args: `$ARGUMENTS`. Read-only: never change code or git state (no commits, no pushes). You may edit only the ticket's `Status` line and its `## Blockers` section.
 
-1. No target given: show `git branch -a` and the current branch, ask "Run `/verify <target>` or `/verify human <target>`", and stop.
-2. The ticket must validate and be `Built` or one of the verified statuses.
-3. **`/verify human <t>`** (the user tested it by hand): add `Human verified` to the status and skip to step 6.
-4. **`/verify <t>`** (Claude reviews): read `git log <t>..HEAD`, `git diff <t>...HEAD`, `git diff --cached`, `git diff`, and untracked files (`git ls-files --others --exclude-standard`; read them directly). Check each todo's outcome. Run the project's existing test, lint and build commands. Review like a PR: bugs, security, missing tests, ticket deviations, bloat. Flag every change not needed by the Goal or a todo as `[Scope]` (extra work counts as a failure).
+1. No target given: show `git branch -a` and the current branch, ask "Run `/verify <target>`", and stop.
+2. Pick the mode:
+   - **Plan:** only a target branch was given and `tickets/<current-branch>.md` exists. The requirement is its Goal and todos. (A hook already checked it is `Built` or verified.)
+   - **PR review:** a PR link was given, or a requirement was pasted after the target. The requirement is the pasted text; if none was pasted, ask for it and stop. Never touch a ticket.
+3. Read the changes. Branch: `git log <t>..HEAD`, `git diff <t>...HEAD`, `git diff --cached`, `git diff`, and untracked files (`git ls-files --others --exclude-standard`; read them directly). PR link: `gh pr view <link>` and `gh pr diff <link>`.
+4. Check each todo (or each point of the requirement). Run the project's existing test, lint and build commands (on the current branch only). Review like a PR: bugs, security, missing tests, deviations, bloat. Flag every change the requirement doesn't need as `[Scope]` (extra work counts as a failure).
 5. Report briefly:
-   - todo ✅/❌
+   - todo or requirement ✅/❌
    - checks run and their results
    - findings as `[Severity] file:line: issue → fix`
    - verdict: Ready / Ready with notes / Changes required / Unable to verify
-
-   All pass: add `Claude verified` to the status. Otherwise set it to `Blocked` with a `- Blocker:` line and stop.
-6. Adding to the status: `Built` → the new one; the other one → `<other> + <new>`; already there → no change. Validate.
-7. Both verifications present: give a PR link, `https://github.com/<owner>/<repo>/compare/<t>...<branch>?expand=1&body=<body>` (owner/repo from `git remote get-url origin`, body URL-encoded). No title (the user fills it in). Body: the ticket's Goal only, without the branch name or ticket path. Remind the user to commit and push first. Otherwise say which verification is still missing.
+6. **Plan mode:** all pass → status `Verified (not human-verified)`, validate. Otherwise add the failures under `## Blockers` at the end (status unchanged), say "Answer them, then run `/plan`", and stop.
+7. All pass and the target is a branch: run `python3 .claude/scripts/pr_link.py <t>` and show the link. Remind the user to commit and push first and, in plan mode, to test it and then delete ` (not human-verified)` from Status.

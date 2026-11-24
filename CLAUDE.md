@@ -13,8 +13,9 @@ Works for any stack (backend, frontend, mobile, etc.): use the project's own too
 **Statuses:** `Planned (unverified) → Planned → Building → Built → Verified (not human-verified) → Verified`. A re-run of `/plan` sets `Planned (revised, unverified)`. Only the user deletes a note in brackets. Only `/plan` writes plan text: requirement or technical problems go in as ❓ / ⛔ items next to their todo, and only those stop `/build`. Validate with `python3 .claude/scripts/validate_plan.py`
 
 ## Code
-- Human-friendly first: clear names, plain flow, explicit over clever.
-- No bloat. Write the least code that works: no speculative features, abstractions, config, wrappers, boilerplate, impossible-case handling, or comments that restate the code. Prefer editing to adding files.
-- Smallest diff, existing patterns, files under 500 lines. Leave unrelated code alone; mention issues instead.
-- Show tradeoffs. Define the check first, verify, then stop.
+- Human-friendly first: readable, explicit and maintainable; clear names, plain flow, explicit over clever.
+- Simplest solution that works, and only what was asked. No bloat: no speculative features, abstractions, config, wrappers, boilerplate, impossible-case handling, or comments that restate the code; no layers that hide simple logic. Prefer editing to adding files.
+- Files under 500 lines, functions and components small; split out a cohesive unit when code gets hard to follow.
+- Small, focused diff; match existing patterns. Don't refactor, reformat or touch unrelated code; mention issues instead. Remove only dead code your change created.
+- State assumptions and show tradeoffs when there is more than one good option. Define the check first, verify, then stop once the goal is met.
 - Always name the current and target branch. Keep replies minimal and skimmable: short bullets, no preamble, no filler.

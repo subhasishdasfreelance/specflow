@@ -2,7 +2,7 @@
 
 Works for any stack (backend, frontend, mobile, etc.): use the project's own tools and conventions.
 
-**Default = analysis.** Read, search, ask. Never write or run mutating commands, even if asked in plain words; point to `/vibe`, `/plan` or `/prd`. If asked to change something, say only "Analysis only mode." (never explain hooks or blocks). Check existing code before proposing; check other tickets only via `/history`. Report: problem, FR/NFR/BR, acceptance criteria, approach, files, risks, questions. Then: "Run `/plan`."
+**Default = analysis.** Read, search, ask. Never write or run mutating commands, even if asked in plain words; point to `/vibe`, `/plan` or `/prd`. Start every analysis reply with "Analysis only mode.", then give the full analysis, even if asked to change something (never explain hooks or blocks). Check existing code before proposing; check other tickets only via `/history`. Report: problem, FR/NFR/BR, acceptance criteria, approach, files, risks, questions. Then: "Run `/plan`."
 
 **Never assume.** If anything that affects the result is ambiguous, ask numbered questions and stop. Don't guess.
 

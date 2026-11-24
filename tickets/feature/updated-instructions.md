@@ -1,8 +1,8 @@
 feature/updated-instructions
-Status: Verified
+Status: Verified (not human-verified)
 
 Goal:
-Repos that install specit get this repo's CLAUDE.md, with every engineering guideline from guidelines.md folded into it, so Claude there stays in analysis mode, points to the next command and follows the same coding rules.
+Repos that install specit get this repo's CLAUDE.md, with every engineering guideline from guidelines.md folded into it, so Claude there stays in analysis mode, still gives the full analysis, points to the next command and follows the same coding rules.
 
 Todo:
 ✅ CLAUDE.md Code section holds every rule from guidelines.md, merged with the existing bullets and nothing repeated (CLAUDE.md)
@@ -36,6 +36,13 @@ Todo:
 
   1. README.md "specit adds" table, CLAUDE.md row: say the block is this repo's CLAUDE.md.
   2. README.md last line: drop guidelines.md and say CLAUDE.md is the block added to the target CLAUDE.md.
+
+
+✅ In other repos every analysis reply starts with "Analysis only mode." and still gives the full analysis, ending with "Run /plan.", including when the user asks for a change in plain words (CLAUDE.md)
+
+  1. CLAUDE.md Workflow, "Default = analysis" line: replace 'If asked to change something, say only "Analysis only mode."' with 'Start every analysis reply with "Analysis only mode.", then give the full analysis, even if asked to change something'.
+  2. Keep "(never explain hooks or blocks)" right after it.
+  3. Keep the rest of that line (the Report list and "Run /plan.") as it is.
 
 
 ⚠️ /build can edit CLAUDE.md only while hooks stay off here (.claude/settings.local.json has disableAllHooks)

@@ -2,7 +2,7 @@
 # Usage: specit [branch | tag | commit]   (default: main)
 # Installs the specit workflow into the current folder:
 #   - copies .claude/ and README-specit.md
-#   - adds the guidelines to the end of CLAUDE.md and two lines to .gitignore,
+#   - adds this repo's CLAUDE.md to the end of CLAUDE.md and two lines to .gitignore,
 #     each inside "specit:start" / "specit:end" markers (re-running replaces them)
 set -euo pipefail
 
@@ -25,7 +25,7 @@ curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
   "https://api.github.com/repos/$REPO/tarball/${REF//\//%2F}" -o "$tmp/repo.tar.gz"
 mkdir "$src"
 tar xzf "$tmp/repo.tar.gz" -C "$src" --strip-components=1 --wildcards \
-  '*/.claude' '*/README.md' '*/guidelines.md'
+  '*/.claude' '*/README.md' '*/CLAUDE.md'
 
 # What will happen to a file that gets a marked block: new, append or update.
 block_action() {   # file start-marker
@@ -50,7 +50,7 @@ echo "Into: $PWD"
   if [[ -e $f ]]; then echo "  overwrite  $f"; else echo "  new        $f"; fi
 done
 if [[ -e README-specit.md ]]; then echo "  overwrite  README-specit.md"; else echo "  new        README-specit.md"; fi
-printf '  %-10s CLAUDE.md (guidelines block)\n' "$(block_action CLAUDE.md "$MD_START")"
+printf '  %-10s CLAUDE.md (workflow block)\n' "$(block_action CLAUDE.md "$MD_START")"
 printf '  %-10s .gitignore (specit lines)\n' "$(block_action .gitignore "$GI_START")"
 
 read -rp "Proceed? (y/N) " answer
@@ -59,6 +59,6 @@ read -rp "Proceed? (y/N) " answer
 mkdir -p .claude
 cp -R "$src/.claude/." .claude/
 cp "$src/README.md" README-specit.md
-add_block CLAUDE.md "$MD_START" "$MD_END" "$(cat "$src/guidelines.md")"
+add_block CLAUDE.md "$MD_START" "$MD_END" "$(cat "$src/CLAUDE.md")"
 add_block .gitignore "$GI_START" "$GI_END" "$GITIGNORE_LINES"
 echo "Done. Restart Claude Code and run /hooks."

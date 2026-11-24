@@ -13,7 +13,7 @@ Claude **reads and advises** by default. It writes only when you type a command,
 |---|---|
 | `.claude/hooks/`, `.claude/scripts/`, `.claude/skills/`, `.claude/settings.json` | Copied in. Same-name files are overwritten, including your own `.claude/settings.json`. |
 | `README-specit.md` | This guide. Your `README.md` is never touched. |
-| `CLAUDE.md`, `.gitignore` | A block is added at the end between `specit:start` / `specit:end` markers. Your text stays. Re-running replaces the block. |
+| `CLAUDE.md`, `.gitignore` | A block is added at the end between `specit:start` / `specit:end` markers. The `CLAUDE.md` block is this repo's `CLAUDE.md`. Your text stays. Re-running replaces the block. |
 
 ## Day-to-day
 ```
@@ -87,4 +87,4 @@ done
 - `/verify` runs your test, lint and build commands, which may create build output.
 - Bash only (no PowerShell). Tested on Linux.
 
-This repo also holds `specit` (the installer), `guidelines.md` (the block added to `CLAUDE.md`) and `tests/workflow/`. These aren't installed.
+This repo also holds `specit` (the installer) and `tests/workflow/`. These aren't installed. Its `CLAUDE.md` is the block added to your `CLAUDE.md`.

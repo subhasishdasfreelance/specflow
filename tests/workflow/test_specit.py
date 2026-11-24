@@ -24,10 +24,8 @@ class SpecitTest(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.tmp)
         # A tarball shaped like GitHub's: one top folder holding the repo's tracked files.
-        tracked = subprocess.run(["git", "ls-files", ".claude", "README.md", "guidelines.md", "CLAUDE.md"],
+        tracked = subprocess.run(["git", "ls-files", ".claude", "README.md", "CLAUDE.md"],
                                  cwd=REPO, capture_output=True, text=True, check=True).stdout.split()
-        if "guidelines.md" not in tracked:
-            tracked.append("guidelines.md")  # not committed yet
         self.tarball = self.tmp / "repo.tar.gz"
         with tarfile.open(self.tarball, "w:gz") as tar:
             for rel in tracked:
@@ -39,7 +37,7 @@ class SpecitTest(unittest.TestCase):
         self.env = {"PATH": f"{bin_dir}:/usr/bin:/bin", "GITHUB_TOKEN": "x", "TARBALL": str(self.tarball)}
         self.project = self.tmp / "project"
         self.project.mkdir()
-        self.guidelines = (REPO / "guidelines.md").read_text().rstrip("\n")
+        self.block = (REPO / "CLAUDE.md").read_text().rstrip("\n")
 
     def install(self, answer="y"):
         return subprocess.run([str(REPO / "specit")], cwd=self.project, env=self.env, input=answer + "\n",
@@ -58,7 +56,7 @@ class SpecitTest(unittest.TestCase):
     def test_fresh_project(self):
         out = self.install()
         self.assertIn("new        CLAUDE.md", out)
-        self.assertEqual(self.read("CLAUDE.md"), f"<!-- specit:start -->\n{self.guidelines}\n<!-- specit:end -->\n")
+        self.assertEqual(self.read("CLAUDE.md"), f"<!-- specit:start -->\n{self.block}\n<!-- specit:end -->\n")
         self.assertEqual(self.read(".gitignore"),
                          "# specit:start\n.claude/runtime/\n.claude/settings.local.json\n# specit:end\n")
         self.assertEqual(self.read("README-specit.md"), (REPO / "README.md").read_text())

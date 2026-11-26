@@ -24,7 +24,12 @@ class ValidatePlanTest(unittest.TestCase):
 
     def test_needs_todos(self):
         text = plan_text().split("Todo:")[0] + "Todo:\n❓ SSO too?\n  1. Or email only.\n"
-        self.assertIn("no 📝 or ✅ item under 'Todo:'", vp.validate(text))
+        self.assertIn("no 🔲 or ✅ item under 'Todo:'", vp.validate(text))
+
+    def test_old_mark_is_not_a_todo(self):
+        for mark in ["📝", "▢"]:
+            text = plan_text().split("Todo:")[0] + f"Todo:\n{mark} Users log in (src/login.py)\n  1. Add it.\n"
+            self.assertIn("no 🔲 or ✅ item under 'Todo:'", vp.validate(text), mark)
 
     def test_missing_heading_and_status(self):
         text = plan_text().replace("Goal:\n", "").replace("Status: Planned (unverified)\n", "")
@@ -33,7 +38,7 @@ class ValidatePlanTest(unittest.TestCase):
         self.assertIn("missing 'Status:' line", errors)
 
     def test_each_item_needs_a_numbered_change(self):
-        for notes in ["📝 Logout works (src/logout.py)\n", "❓ SSO too?\n  Not numbered.\n"]:
+        for notes in ["🔲 Logout works (src/logout.py)\n", "❓ SSO too?\n  Not numbered.\n"]:
             with self.subTest(notes):
                 self.assertTrue(any("no numbered change" in e for e in vp.validate(plan_text(notes=notes))))
 
@@ -44,7 +49,7 @@ class ValidatePlanTest(unittest.TestCase):
         self.assertEqual(vp.open_items(plan_text()), [])
 
     def test_backticks_rejected(self):
-        text = plan_text(notes="📝 Add `logout` (src/logout.py)\n  1. Add it.\n")
+        text = plan_text(notes="🔲 Add `logout` (src/logout.py)\n  1. Add it.\n")
         self.assertTrue(any("backticks" in e for e in vp.validate(text)))
 
     def test_blank_lines_around_changes_allowed(self):
@@ -56,11 +61,11 @@ class ValidatePlanTest(unittest.TestCase):
         self.assertEqual(vp.validate(template), [])
 
     def test_duplicate_items(self):
-        text = plan_text(notes="📝 Session lasts 1 day (src/session.py)\n  1. Again.\n")
+        text = plan_text(notes="🔲 Session lasts 1 day (src/session.py)\n  1. Again.\n")
         self.assertIn("duplicate items under 'Todo:' (items must not overlap)", vp.validate(text))
 
     def test_built_plan_needs_all_todos_done(self):
-        self.assertIn("plan is Built but a 📝 todo remains", vp.validate(plan_text("Built")))
+        self.assertIn("plan is Built but a 🔲 todo remains", vp.validate(plan_text("Built")))
         notes = "⚠️ Slow\n  1. Watch it.\n❌ SSO\n  1. Later.\n"
         self.assertEqual(vp.validate(plan_text("Built", done=True, notes=notes)), [])
 
@@ -85,6 +90,27 @@ class ValidatePlanTest(unittest.TestCase):
         self.assertEqual(fail.returncode, 1)
         self.assertIn("invalid plan status 'Approved'", fail.stdout)
         self.assertEqual(missing.returncode, 1)
+
+    def test_verified_flag(self):
+        script = REPO / ".claude" / "scripts" / "validate_plan.py"
+
+        def check(*plans):
+            with tempfile.TemporaryDirectory() as d:
+                paths = []
+                for i, text in enumerate(plans):
+                    paths.append(Path(d, f"{i}.md"))
+                    paths[-1].write_text(text, encoding="utf-8")
+                return subprocess.run([sys.executable, script, "--verified", *paths],
+                                      capture_output=True, text=True, encoding="utf-8")
+
+        broken_skipped = "Status: Verified (Skipped)\nNo headings at all.\n"
+        ok = check(plan_text("Verified", done=True), broken_skipped)
+        self.assertEqual(ok.returncode, 0, ok.stdout)
+        self.assertIn("SKIP", ok.stdout)
+        for status in ["Verified (not human-verified)", "Building", "Built"]:
+            fail = check(plan_text("Verified", done=True), plan_text(status, done=True))
+            self.assertEqual(fail.returncode, 1, status)
+            self.assertIn(f"status is '{status}', must be 'Verified'", fail.stdout)
 
 
 if __name__ == "__main__":

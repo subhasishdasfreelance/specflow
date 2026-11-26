@@ -2,7 +2,7 @@ feature/updated-instructions
 Status: Verified (not human-verified)
 
 Goal:
-Repos that install specit get this repo's CLAUDE.md, with every engineering guideline from guidelines.md folded into it, so Claude there stays in analysis mode, still gives the full analysis, points to the next command and follows the same coding rules.
+Repos that install specflow get this repo's CLAUDE.md, with every engineering guideline from guidelines.md folded into it, so Claude there stays in analysis mode, still gives the full analysis, points to the next command and follows the same coding rules.
 
 Todo:
 ✅ CLAUDE.md Code section holds every rule from guidelines.md, merged with the existing bullets and nothing repeated (CLAUDE.md)
@@ -15,16 +15,16 @@ Todo:
   6. CLAUDE.md Code last bullet (branch names, short replies): no change.
 
 
-✅ specit adds this repo's CLAUDE.md, not guidelines.md, as the block in the target CLAUDE.md, and guidelines.md is gone (specit, guidelines.md)
+✅ specflow adds this repo's CLAUDE.md, not guidelines.md, as the block in the target CLAUDE.md, and guidelines.md is gone (specflow, guidelines.md)
 
-  1. specit header comment: say it adds CLAUDE.md to the end of the target CLAUDE.md.
-  2. specit tar extract list: replace '*/guidelines.md' with '*/CLAUDE.md'.
-  3. specit printf preview line: label it "CLAUDE.md (workflow block)".
-  4. specit add_block call for CLAUDE.md: use the text of "$src/CLAUDE.md".
+  1. specflow header comment: say it adds CLAUDE.md to the end of the target CLAUDE.md.
+  2. specflow tar extract list: replace '*/guidelines.md' with '*/CLAUDE.md'.
+  3. specflow printf preview line: label it "CLAUDE.md (workflow block)".
+  4. specflow add_block call for CLAUDE.md: use the text of "$src/CLAUDE.md".
   5. guidelines.md: delete the file.
 
 
-✅ The installer tests expect the CLAUDE.md block and pass (tests/workflow/test_specit.py)
+✅ The installer tests expect the CLAUDE.md block and pass (tests/workflow/test_specflow.py)
 
   1. setUp: drop guidelines.md from the git ls-files list and remove the "not committed yet" fallback.
   2. setUp: rename self.guidelines to self.block and read it from REPO / "CLAUDE.md".
@@ -34,7 +34,7 @@ Todo:
 
 ✅ The README says the block comes from this repo's CLAUDE.md (README.md)
 
-  1. README.md "specit adds" table, CLAUDE.md row: say the block is this repo's CLAUDE.md.
+  1. README.md "specflow adds" table, CLAUDE.md row: say the block is this repo's CLAUDE.md.
   2. README.md last line: drop guidelines.md and say CLAUDE.md is the block added to the target CLAUDE.md.
 
 
@@ -50,6 +50,6 @@ Todo:
   1. The hooks treat CLAUDE.md as protected in every mode.
 
 
-⚠️ Changes reach other repos only after this is merged to main and specit is run again there
+⚠️ Changes reach other repos only after this is merged to main and specflow is run again there
 
-  1. specit downloads from GitHub main by default.
+  1. specflow downloads from GitHub main by default.

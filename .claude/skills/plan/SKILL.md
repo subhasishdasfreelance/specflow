@@ -10,7 +10,7 @@ Args: `$ARGUMENTS`. Branch: the current git branch (a hook already checked it ag
 
 1. Use the analysis from this conversation and the args. Read `docs/PRD.md` (if any) and the ticket (if any). If another branch already covers this (`git grep -i <term> <branch> -- tickets`), stop and report it. If it conflicts with the PRD, say "Run `/prd <change>` first" and stop.
 2. **No ticket:** write it from [plan-template.md](plan-template.md), status `Planned (unverified)`.
-   **Ticket exists:** revise it. If it is in the old structure (no line starting with `Status:`), rewrite it in the template's structure. Keep unaffected ✅ marks and ⚠️ / ❌ items, work the answers into the Goal and todos, and turn answered ❓ and ⛔ items into 📝 todos (or drop them). Status `Planned (revised, unverified)`.
+   **Ticket exists:** revise it. If it is in the old structure (no line starting with `Status:`), rewrite it in the template's structure. Keep unaffected ✅ marks and ⚠️ / ❌ items, work the answers into the Goal and todos, and turn answered ❓ and ⛔ items into 🔲 todos (or drop them). Status `Planned (revised, unverified)`.
 3. Anything unclear about the requirement or the technical approach? Add it as a ❓ item under `Todo:`, next to the todo it belongs to. Never guess. Only `/plan` writes plan text: ❓ question, ⚠️ warning, ⛔ blocked, ❌ out of scope.
 4. Keep it brief and skimmable:
    - Plain, everyday words. Short sentences, no jargon, no filler.

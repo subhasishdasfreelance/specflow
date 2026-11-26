@@ -177,7 +177,7 @@ class PlanModeTest(HookTest):
     def test_revise_marks_revised(self):
         self.put(PLAN, plan_text("Building", done=True))
         self.slash("plan", "add SSO")
-        sso = "📝 SSO (src/sso.py)\n  1. Add SSO.\n"
+        sso = "🔲 SSO (src/sso.py)\n  1. Add SSO.\n"
         self.assertAllowed(self.write(PLAN, plan_text("Planned (revised, unverified)", done=True, notes=sso)))
         self.assertDenied(self.write(PLAN, plan_text("Building", done=True, notes=sso)))
         self.assertDenied(self.write(PLAN, plan_text("Planned", done=True, notes=sso)))
@@ -208,8 +208,8 @@ class BuildModeTest(HookTest):
         self.put(PLAN, plan_text("Building"))
         self.assertAllowed(self.write("src/login.py"))
         self.assertAllowed(self.bash("mkdir -p src/auth && npm test"))
-        self.assertAllowed(self.edit(PLAN, "📝 Users log in", "✅ Users log in"))
-        self.assertDenied(self.edit(PLAN, "📝 Users log in", "✅ Users sign up"))
+        self.assertAllowed(self.edit(PLAN, "🔲 Users log in", "✅ Users log in"))
+        self.assertDenied(self.edit(PLAN, "🔲 Users log in", "✅ Users sign up"))
 
     def test_build_limits(self):
         self.put(PLAN, plan_text("Building"))
@@ -229,7 +229,7 @@ class BuildModeTest(HookTest):
         self.assertDenied(self.write(PLAN, blocked))
         self.put(PLAN, blocked)
         self.assertDenied(self.write(PLAN, plan_text("Building")))
-        self.assertDenied(self.edit(PLAN, "⛔ No test key", "📝 No test key"))
+        self.assertDenied(self.edit(PLAN, "⛔ No test key", "🔲 No test key"))
 
 
 class VerifyModeTest(HookTest):
@@ -251,7 +251,7 @@ class VerifyModeTest(HookTest):
         allowed = [("Built", "Verified (not human-verified)"),
                    ("Verified (not human-verified)", "Verified (not human-verified)")]
         denied = [("Built", "Verified"), ("Verified (not human-verified)", "Verified"),
-                  ("Building", "Verified (not human-verified)")]
+                  ("Building", "Verified (not human-verified)"), ("Built", "Verified (Skipped)")]
         for check, pairs in [(self.assertAllowed, allowed), (self.assertDenied, denied)]:
             for old, new in pairs:
                 with self.subTest(f"{old} -> {new}"):
@@ -262,7 +262,7 @@ class VerifyModeTest(HookTest):
         self.put(PLAN, plan_text("Built", done=True))
         self.slash("verify", "main")
         self.assertDenied(self.write(PLAN, plan_text("Built", done=True, notes="⛔ Tests fail\n  1. Fix them.\n")))
-        self.assertDenied(self.edit(PLAN, "✅ Users log in", "📝 Users log in with SSO"))
+        self.assertDenied(self.edit(PLAN, "✅ Users log in", "🔲 Users log in with SSO"))
 
     def test_verify_cannot_commit_push_or_open_pr(self):
         self.put(PLAN, plan_text("Built", done=True))

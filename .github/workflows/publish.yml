@@ -1,0 +1,34 @@
+name: publish
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Check the tag matches package.json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $version"
+            exit 1
+          fi
+      - name: Publish (alpha and beta get their own npm tag)
+        run: |
+          version=$(node -p "require('./package.json').version")
+          case "$version" in
+            *-alpha.*) npm publish --tag alpha ;;
+            *-beta.*) npm publish --tag beta ;;
+            *) npm publish ;;
+          esac

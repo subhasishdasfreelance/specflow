@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Validate tickets in tickets/ (one plan per branch). Read-only.
 
-Usage: python3 .claude/scripts/validate_plan.py [ticket.md ...]
-No arguments = validate every tickets/**/*.md in the new structure. Exit 1 on any error.
+Usage: python3 .claude/scripts/validate_plan.py [--verified] [ticket.md ...]
+No ticket names = validate every tickets/**/*.md in the new structure. Exit 1 on any error.
+--verified: also fail unless each plan is exactly "Verified"; plans marked "Verified (Skipped)" are skipped.
 
 New structure: a "Status:" line, "Goal:" and "Todo:" headings, and one line per item
 starting with a mark, each with numbered changes indented below it.
@@ -16,15 +17,17 @@ from pathlib import Path
 UNVERIFIED = "Planned (unverified)"
 REVISED = "Planned (revised, unverified)"
 CLAUDE_VERIFIED = "Verified (not human-verified)"
-STATUSES = [UNVERIFIED, REVISED, "Planned", "Building", "Built", CLAUDE_VERIFIED, "Verified"]
+VERIFIED = "Verified"
+SKIPPED = "Verified (Skipped)"  # set by hand; --verified skips it
+STATUSES = [UNVERIFIED, REVISED, "Planned", "Building", "Built", CLAUDE_VERIFIED, VERIFIED, SKIPPED]
 DONE = {"Built", CLAUDE_VERIFIED, "Verified"}
 SECTIONS = ["Goal", "Todo"]
-TODO, TICKED = "📝", "✅"
+TODO, TICKED = "🔲", "✅"
 OPEN_MARKS = {"❓", "⛔"}  # while any is left, /build is refused
 
 STATUS_RE = re.compile(r"^Status:\s*(.*?)\s*$", re.M)
 SECTION_RE = re.compile(r"^(Goal|Todo):\s*$")
-ITEM_RE = re.compile(r"^(📝|✅|❓|⚠️?|⛔|❌)\s*(.*?)\s*$")
+ITEM_RE = re.compile(r"^(🔲|✅|❓|⚠️?|⛔|❌)\s*(.*?)\s*$")
 CHANGE_RE = re.compile(r"^\s+\d+\.\s+\S")  # an indented, numbered line below an item
 
 
@@ -95,7 +98,8 @@ def ticket_files():
 
 
 def main(argv):
-    files = [Path(a) for a in argv] or ticket_files()
+    verified = "--verified" in argv
+    files = [Path(a) for a in argv if a != "--verified"] or ticket_files()
     if not files:
         print("No tickets found in tickets/ (nothing to validate).")
         return 0
@@ -105,7 +109,14 @@ def main(argv):
             print(f"FAIL {path}: file not found")
             failed = True
             continue
-        errors = validate(path.read_text(encoding="utf-8"))
+        text = path.read_text(encoding="utf-8")
+        status = plan_status(text)
+        if verified and status == SKIPPED:
+            print(f"SKIP {path}")
+            continue
+        errors = validate(text)
+        if verified and status != VERIFIED:
+            errors.append(f"status is '{status}', must be '{VERIFIED}'")
         print(f"{'FAIL' if errors else 'OK  '} {path}")
         for e in errors:
             print(f"  - {e}")

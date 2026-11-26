@@ -131,7 +131,7 @@ def simulate(tool, ti, old):
 
 
 def normalize(text):
-    """Plan text minus the parts status updates may change (Status line, 📝 -> ✅ marks)."""
+    """Plan text minus the parts status updates may change (Status line, 🔲 -> ✅ marks)."""
     out = []
     for line in text.splitlines():
         if line.startswith(vp.TICKED):
@@ -170,7 +170,7 @@ def plan_decision(mode, args, tool, ti, path):
     if not old:
         return "Only /plan can create a plan."
     if normalize(old) != normalize(new):
-        return f"/{mode} may only change the Status line and 📝 -> ✅ marks."
+        return f"/{mode} may only change the Status line and 🔲 -> ✅ marks."
     if a != b and (a, b) not in RULES[mode]:
         return f"/{mode}: status {a} -> {b} is not allowed."
     return None

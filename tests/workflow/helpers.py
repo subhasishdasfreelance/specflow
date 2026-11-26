@@ -13,7 +13,7 @@ SID = "test-session-1"
 
 
 def plan_text(status="Planned (unverified)", done=False, notes=""):
-    mark = "✅" if done else "📝"
+    mark = "✅" if done else "🔲"
     return f"""feature/login
 Status: {status}
 

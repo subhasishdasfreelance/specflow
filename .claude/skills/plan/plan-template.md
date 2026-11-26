@@ -5,7 +5,7 @@ Goal:
 <One plain sentence: who needs what, and why.>
 
 Todo:
-📝 <one plain, testable outcome> (<files>)
+🔲 <one plain, testable outcome> (<files>)
 
   1. <file and function or field: what changes, e.g. "db/schema.sql: add a sessions table with user_id and expires_at.">
   2. <next change, if any>

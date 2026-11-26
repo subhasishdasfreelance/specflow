@@ -9,7 +9,7 @@ Todo:
 
   1. plan-template.md line 1: the branch name; line 2: "Status: <value>" with no leading dash.
   2. plan-template.md: plain "Goal:" and "Todo:" headings replace "## Goal" / "## Todo"; no ---, **, checkboxes or backticks.
-  3. plan-template.md: each item is one line starting with a mark: 📝 todo, ✅ done, ❓ question, ⚠️ warning, ⛔ blocked, ❌ out of scope.
+  3. plan-template.md: each item is one line starting with a mark: 🔲 todo, ✅ done, ❓ question, ⚠️ warning, ⛔ blocked, ❌ out of scope.
   4. plan-template.md: each item has indented changes numbered 1., 2., 3.
   5. The "## Questions" and "## Blockers" sections are gone; ❓ and ⛔ items replace them.
 
@@ -17,8 +17,8 @@ Todo:
 ✅ The validator checks the new structure and reports open ❓ and ⛔ items (.claude/scripts/validate_plan.py)
 
   1. parse() returns status, sections and items; each item is [mark, text, has_change].
-  2. validate() errors on: missing Status, Goal or Todo; invalid status; no 📝 or ✅ item; duplicate items; an item with no numbered change; backticks in item text.
-  3. validate() errors when the status is Built or Verified but a 📝 remains.
+  2. validate() errors on: missing Status, Goal or Todo; invalid status; no 🔲 or ✅ item; duplicate items; an item with no numbered change; backticks in item text.
+  3. validate() errors when the status is Built or Verified but a 🔲 remains.
   4. New open_items(text) returns the ❓ and ⛔ items; the hooks use it.
   5. New is_new_structure(text) is true when a line starts with "Status:".
   6. ticket_files() returns only tickets where is_new_structure() is true, so old tickets are skipped.
@@ -28,15 +28,15 @@ Todo:
 
   1. workflow_precheck.py ticket_text() returns None for an old-structure ticket, so /build says "no plan".
   2. workflow_precheck.py precheck() refuses /build when open_items() is not empty.
-  3. workflow_policy.py: FREE_LINE matches "Status:"; normalize() turns a leading ✅ back into 📝 before comparing, so 📝 to ✅ is the only allowed mark change.
+  3. workflow_policy.py: FREE_LINE matches "Status:"; normalize() turns a leading ✅ back into 🔲 before comparing, so 🔲 to ✅ is the only allowed mark change.
   4. workflow_policy.py: split_blockers() is removed; plan_decision() denies /build and /verify any text change.
   5. pr_link.py goal() reads the lines under "Goal:" and returns "" for an old-structure ticket.
 
 
 ✅ The skills and docs describe the new structure and who writes what (.claude/skills/plan/SKILL.md, .claude/skills/build/SKILL.md, .claude/skills/verify/SKILL.md, .claude/skills/history/SKILL.md, CLAUDE.md, README.md)
 
-  1. plan/SKILL.md: writes the new structure, rewrites an old-structure ticket, turns answered ❓ and ⛔ into 📝, keeps ⚠️ and ❌; only /plan writes item text.
-  2. build/SKILL.md: changes 📝 to ✅; when stuck it leaves the plan as is, explains in chat and says "Run /plan".
+  1. plan/SKILL.md: writes the new structure, rewrites an old-structure ticket, turns answered ❓ and ⛔ into 🔲, keeps ⚠️ and ❌; only /plan writes item text.
+  2. build/SKILL.md: changes 🔲 to ✅; when stuck it leaves the plan as is, explains in chat and says "Run /plan".
   3. verify/SKILL.md: may edit only the Status line; on failure it leaves the plan as is and says "Run /plan".
   4. history/SKILL.md: skips tickets with no "Status:" line.
   5. CLAUDE.md and README.md: ❓ and ⛔ items replace the old sections; only ❓ and ⛔ stop /build.

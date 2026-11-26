@@ -1,0 +1,10 @@
+name: specflow plans
+
+on: push
+
+jobs:
+  plans:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .claude/scripts/validate_plan.py --verified

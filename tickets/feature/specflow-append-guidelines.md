@@ -1,9 +1,9 @@
-# feature/specit-append-guidelines
+# feature/specflow-append-guidelines
 
 - Status: Verified
 
 ## Goal
-People using specit follow a simpler workflow: they approve by deleting a note in brackets, read plans easily, and spend fewer tokens because checks run without AI.
+People using specflow follow a simpler workflow: they approve by deleting a note in brackets, read plans easily, and spend fewer tokens because checks run without AI.
 
 ## Todo
 
@@ -54,7 +54,7 @@ People using specit follow a simpler workflow: they approve by deleting a note i
 
 ---
 
-- [x] **The installer and the uninstall script include the new files** (README.md, tests/workflow/test_specit.py)
+- [x] **The installer and the uninstall script include the new files** (README.md, tests/workflow/test_specflow.py)
   - `pr_link.py` and `workflow_precheck.py` are in the uninstall `rm -f` list.
 
 ---

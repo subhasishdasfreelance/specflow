@@ -1,5 +1,5 @@
 feature/npx-script
-Status: Verified (not human-verified)
+Status: Verified (Skipped)
 
 Goal:
 Anyone can add, update or remove the specflow workflow in any project on Windows, macOS or Linux with npx specflow or bunx specflow, with no bash, curl or GitHub token, an old specit install is cleaned up on the way, plan todos are marked 🔲 instead of 📝 (old plans too), GitHub Actions fails on every push while any plan is not Verified, except plans you mark Verified (Skipped), specit is renamed to specflow everywhere, past tickets included, and bun run release:<kind> "message" makes a release from a clean main.

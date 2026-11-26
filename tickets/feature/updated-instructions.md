@@ -1,5 +1,5 @@
 feature/updated-instructions
-Status: Verified (not human-verified)
+Status: Verified
 
 Goal:
 Repos that install specflow get this repo's CLAUDE.md, with every engineering guideline from guidelines.md folded into it, so Claude there stays in analysis mode, still gives the full analysis, points to the next command and follows the same coding rules.
